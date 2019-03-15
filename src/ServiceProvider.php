@@ -24,6 +24,8 @@ class ServiceProvider extends BaseServiceProvider
      */
     public function boot()
     {
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+
         $this->publishConfig();
         $this->publishMigrations();
     }
