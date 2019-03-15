@@ -1,0 +1,30 @@
+{
+  "name": "shiwuhao/laravel-rbac",
+  "description": "A laravel package",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "shiwuhao",
+      "email": "admin@shiwuhao.com"
+    }
+  ],
+  "require": {
+    "illuminate/support": "^5.8",
+    "illuminate/database": "^5.8"
+  },
+  "autoload": {
+    "psr-4": {
+      "Shiwuhao\\Rbac\\": "src"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Shiwuhao\\Rbac\\ServiceProvider"
+      ],
+      "aliases": {
+        "Rbac": "Shiwuhao\\Rbac\\Rbac"
+      }
+    }
+  }
+}
