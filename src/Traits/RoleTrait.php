@@ -9,12 +9,12 @@
 namespace Shiwuhao\Rbac\Traits;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Shiwuhao\Rbac\Traits\BaseTrait;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as BaseCollection;
 
 trait RoleTrait
 {
-    use BaseTrait;
-
     /**
      * 获取角色下的用户
      * 用户 角色 多对多关联
@@ -61,5 +61,28 @@ trait RoleTrait
         foreach ($ids as $id) {
             $this->permissions()->detach($id);
         }
+    }
+
+    /**
+     * Get all of the IDs from the given mixed value.
+     *
+     * @param  mixed $value
+     * @return array
+     */
+    protected function parseIds($value)
+    {
+        if ($value instanceof Model) {
+            return [$value->{$this->getKey()}];
+        }
+
+        if ($value instanceof Collection) {
+            return $value->pluck($this->getKey())->all();
+        }
+
+        if ($value instanceof BaseCollection) {
+            return $value->toArray();
+        }
+
+        return (array)$value;
     }
 }
