@@ -6,7 +6,7 @@
  * Time: 5:59 PM
  */
 
-namespace Shiwuhao\Traits;
+namespace Shiwuhao\Rbac\Traits;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Collection;

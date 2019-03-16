@@ -27,13 +27,15 @@ interface RoleInterface
      */
     public function users(): BelongsToMany;
 
-    /**
-     *
-     */
-    public function attachPermissions(): void;
 
     /**
-     *
+     * @param $permissions
      */
-    public function detachPermissions(): void;
+    public function attachPermissions($permissions): void;
+
+
+    /**
+     * @param $permissions
+     */
+    public function detachPermissions($permissions): void;
 }

@@ -21,4 +21,13 @@ class Permission extends Model implements PermissionInterface
         'pid', 'name', 'display_name', 'description', 'action',
     ];
 
+    /**
+     * Permission constructor.
+     * @param array $attributes
+     */
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->setTable(config('rbac.table.permissions'));
+    }
 }

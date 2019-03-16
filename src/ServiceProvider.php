@@ -24,7 +24,7 @@ class ServiceProvider extends BaseServiceProvider
      */
     public function boot()
     {
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
         $this->publishConfig();
         $this->publishMigrations();
@@ -74,7 +74,7 @@ class ServiceProvider extends BaseServiceProvider
     protected function publishMigrations()
     {
         $this->publishes([
-            __DIR__ . '/../database/migrations/create_rbac_tables.php' => database_path('migrations'),
+            __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], 'migrations');
     }
 }

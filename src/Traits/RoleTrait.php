@@ -9,7 +9,7 @@
 namespace Shiwuhao\Rbac\Traits;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Shiwuhao\Traits\BaseTrait;
+use Shiwuhao\Rbac\Traits\BaseTrait;
 
 trait RoleTrait
 {
