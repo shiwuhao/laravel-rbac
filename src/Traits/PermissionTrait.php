@@ -19,6 +19,10 @@ trait PermissionTrait
      */
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(config('rbac.models.permission'), 'permission_role', 'permission_id', 'role_id');
+        return $this->belongsToMany(
+            config('rbac.model.permission'),
+            config('rbac.table.permission_role'),
+            config('rbac.foreign_key.permission'),
+            config('rbac.foreign_key.role'));
     }
 }

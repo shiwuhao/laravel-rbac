@@ -12,11 +12,6 @@ use Illuminate\Support\Facades\Auth;
 class RoleMiddleware
 {
     /**
-     * 分隔符
-     */
-    const DELIMITER = '|';
-
-    /**
      * @param $request
      * @param Closure $next
      * @param $roles
@@ -24,7 +19,8 @@ class RoleMiddleware
      */
     public function handle($request, Closure $next, $roles)
     {
-        $roles = is_array($roles) ? $roles : explode(self::DELIMITER, $roles);
+        $delimiter = config('rbac.delimiter', '|');
+        $roles = is_array($roles) ? $roles : explode($delimiter, trim($roles, $delimiter));
 
         if (Auth::guest() || !$request->user()->hasRole($roles)) {
             abort(403);

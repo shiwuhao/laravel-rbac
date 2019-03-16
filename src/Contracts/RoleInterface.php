@@ -20,22 +20,25 @@ interface RoleInterface
     /**
      * @return BelongsToMany
      */
-    public function permissions(): BelongsToMany;
+    public function users(): BelongsToMany;
 
     /**
      * @return BelongsToMany
      */
-    public function users(): BelongsToMany;
-
+    public function permissions(): BelongsToMany;
 
     /**
      * @param $permissions
      */
     public function attachPermissions($permissions): void;
 
-
     /**
      * @param $permissions
      */
     public function detachPermissions($permissions): void;
+
+    /**
+     * @param $permissions
+     */
+    public function syncPermissions($permissions): void;
 }

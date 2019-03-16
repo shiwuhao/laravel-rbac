@@ -11,11 +11,6 @@ use Closure;
 class PermissionMiddleware
 {
     /**
-     * 分隔符
-     */
-    const DELIMITER = '|';
-
-    /**
      * @param $request
      * @param Closure $next
      * @param $permissions
@@ -23,7 +18,8 @@ class PermissionMiddleware
      */
     public function handle($request, Closure $next, $permissions)
     {
-        $permissions = is_array($permissions) ? $permissions : explode(self::DELIMITER, $permissions);
+        $delimiter = config('rbac.delimiter', '|');
+        $permissions = is_array($permissions) ? $permissions : explode($delimiter, trim($permissions, $delimiter));
 
         if ($this->auth->guest() || !$request->user()->can($permissions)) {
             abort(403);

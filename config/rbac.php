@@ -1,21 +1,33 @@
 <?php
 
 return [
-    'models' => [
-        'permission' => \Shiwuhao\Rbac\Models\Permission::class,
 
-        'role' => \Shiwuhao\Rbac\Models\Role::class,
-
-        'user' => '\App\User',
+    // 模型命名空间
+    'model' => [
+        'role' => 'App\Role',
+        'user' => 'App\User',
+        'permission' => 'App\Permission',
     ],
 
-    'tables' => [
+    // 表名称
+    'table' => [
+        'users' => 'users',
         'roles' => 'roles',
         'permissions' => 'permissions',
         'role_user' => 'role_user',
         'permission_role' => 'permission_role',
         'data_role' => 'data_authorize',
     ],
+
+    // 外键
+    'foreign_key' => [
+        'role' => 'role_id',
+        'user' => 'user_id',
+        'permission' => 'permission_id',
+    ],
+
+    // 定界符
+    'delimiter' => '|',
 
     // 需要生成权限节点的控制器
     'permission' => [

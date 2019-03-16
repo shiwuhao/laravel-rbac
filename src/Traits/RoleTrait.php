@@ -9,9 +9,6 @@
 namespace Shiwuhao\Rbac\Traits;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Collection as BaseCollection;
 
 trait RoleTrait
 {
@@ -22,7 +19,11 @@ trait RoleTrait
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(config('rbac.models.user'), 'role_user', 'role_id', 'user_id');
+        return $this->belongsToMany(
+            config('rbac.model.user'),
+            config('rbac.table.role_user'),
+            config('rbac.foreign_key.role'),
+            config('rbac.foreign_key.user'));
     }
 
     /**
@@ -32,57 +33,41 @@ trait RoleTrait
      */
     public function permissions(): BelongsToMany
     {
-        return $this->belongsToMany(config('rbac.models.permission'), 'permission_role', 'role_id', 'permission_id');
+        return $this->belongsToMany(
+            config('rbac.model.permission'),
+            config('rbac.table.permission_role'),
+            config('rbac.foreign_key.role'),
+            config('rbac.foreign_key.permission'));
     }
 
     /**
      * 将多个权限附加到当前角色
      * @param $permissions
      */
-    public function attachPermissions($permissions): void
+    public function attachPermissions($permissions)
     {
-        $ids = $this->parseIds($permissions);
-
-        foreach ($ids as $id) {
-            $this->permissions()->attach($id);
-        }
+        $this->permissions()->attach($permissions);
     }
 
     /**
      * 从当前角色分离多个权限
      * @param null $permissions
+     * @return int
      */
-    public function detachPermissions($permissions = null): void
+    public function detachPermissions($permissions = null)
     {
         if (!$permissions) $permissions = $this->permissions()->get();
 
-        $ids = $this->parseIds($permissions);
-
-        foreach ($ids as $id) {
-            $this->permissions()->detach($id);
-        }
+        return $this->permissions()->detach($permissions);
     }
 
     /**
-     * Get all of the IDs from the given mixed value.
-     *
-     * @param  mixed $value
+     * 从当前角色同步多个权限
+     * @param $permissions
      * @return array
      */
-    protected function parseIds($value)
+    public function syncPermissions($permissions)
     {
-        if ($value instanceof Model) {
-            return [$value->{$this->getKey()}];
-        }
-
-        if ($value instanceof Collection) {
-            return $value->pluck($this->getKey())->all();
-        }
-
-        if ($value instanceof BaseCollection) {
-            return $value->toArray();
-        }
-
-        return (array)$value;
+        return $this->permissions()->sync($permissions);
     }
 }
