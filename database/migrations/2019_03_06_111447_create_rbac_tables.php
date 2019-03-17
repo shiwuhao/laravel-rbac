@@ -53,10 +53,10 @@ class CreateRbacTables extends Migration
             $table->primary(['permission_id', 'role_id']);
         });
 
-        Schema::create('data_authorize', function (Blueprint $table) {
+        Schema::create('model_permissions', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('role_id')->comment('角色ID');
-            $table->morphs('authorizable');
+            $table->morphs('modelable');
             $table->timestamps();
 
             $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');

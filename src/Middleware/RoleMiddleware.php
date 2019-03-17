@@ -19,10 +19,7 @@ class RoleMiddleware
      */
     public function handle($request, Closure $next, $roles)
     {
-        $delimiter = config('rbac.delimiter', '|');
-        $roles = is_array($roles) ? $roles : explode($delimiter, trim($roles, $delimiter));
-
-        if (Auth::guest() || !$request->user()->hasRole($roles)) {
+        if (Auth::guest() || !Auth::user()->hasRole($roles)) {
             abort(403);
         }
 

@@ -13,14 +13,14 @@ return [
     'table' => [
         'users' => 'users',
         'roles' => 'roles',
-        'permissions' => 'permissions',
         'role_user' => 'role_user',
+        'permissions' => 'permissions',
         'permission_role' => 'permission_role',
-        'data_role' => 'data_authorize',
+        'model_permissions' => 'model_permissions',
     ],
 
     // 外键
-    'foreign_key' => [
+    'foreignKey' => [
         'role' => 'role_id',
         'user' => 'user_id',
         'permission' => 'permission_id',
@@ -28,6 +28,29 @@ return [
 
     // 定界符
     'delimiter' => '|',
+
+    // 控制器action label 替换
+    'resourceAbilityMapLabel' => [
+        'index' => '列表',
+        'show' => '详情',
+        'create' => '新增',
+        'store' => '新增',
+        'edit' => '更新',
+        'update' => '更新',
+        'destroy' => '删除',
+        'restore' => '恢复',
+    ],
+
+    // 控制器action name 替换
+    'resourceAbilityMap' => [
+        'index' => 'list',
+        'show' => 'view',
+        'create' => 'create',
+        'store' => 'create',
+        'edit' => 'update',
+        'update' => 'update',
+        'destroy' => 'delete',
+    ],
 
     // 需要生成权限节点的控制器
     'permission' => [
@@ -46,23 +69,4 @@ return [
         \App\Http\Controllers\TagController::class => '标签管理',
         \App\Http\Controllers\OrderController::class => '订单管理',
     ],
-
-    // 控制器默认方法label
-    'action_label' => [
-        'index' => '列表',
-        'show' => '详情',
-        'store' => '新增',
-        'update' => '更新',
-        'destroy' => '删除',
-        'restore' => '恢复',
-    ],
-
-    // 方法名称替换
-    'action_replace' => [
-        'store' => 'create',
-        'update' => 'edit',
-        'destroy' => 'delete',
-        'show' => 'detail',
-    ],
-
 ];

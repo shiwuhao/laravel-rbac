@@ -3,6 +3,7 @@
 namespace Shiwuhao\Rbac\Middleware;
 
 use Closure;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Class PermissionMiddleware
@@ -18,10 +19,7 @@ class PermissionMiddleware
      */
     public function handle($request, Closure $next, $permissions)
     {
-        $delimiter = config('rbac.delimiter', '|');
-        $permissions = is_array($permissions) ? $permissions : explode($delimiter, trim($permissions, $delimiter));
-
-        if ($this->auth->guest() || !$request->user()->can($permissions)) {
+        if (Auth::guest() || !Auth::user()->hasPermission($permissions)) {
             abort(403);
         }
 

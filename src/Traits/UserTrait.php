@@ -8,10 +8,8 @@
 
 namespace Shiwuhao\Rbac\Traits;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Shiwuhao\Rbac\Models\Permission;
-use Shiwuhao\Rbac\Models\Role;
 
 /**
  * Trait UserTrait
@@ -19,8 +17,6 @@ use Shiwuhao\Rbac\Models\Role;
  */
 trait UserTrait
 {
-    use BaseTrait;
-
     /**
      * 获取用户拥有的角色
      * 用户 角色 多对多关联
@@ -31,8 +27,8 @@ trait UserTrait
         return $this->belongsToMany(
             config('rbac.model.role'),
             config('rbac.table.role_user'),
-            config('rbac.foreign_key.user'),
-            config('rbac.foreign_key.role'));
+            config('rbac.foreignKey.user'),
+            config('rbac.foreignKey.role'));
     }
 
     /**
@@ -42,6 +38,18 @@ trait UserTrait
     public function permissions()
     {
         return $this->roles()->with('permissions');
+    }
+
+    /**
+     * 模型授权
+     * 获取用户拥有的模型权限节点
+     * @return BelongsToMany
+     */
+    public function modelPermissions($modelNamespace)
+    {
+        return $this->roles()->with(['modelPermissions'=>function ($re) use($modelNamespace) {
+            return $re->modelPermissions($modelNamespace);
+        }]);
     }
 
     /**
@@ -95,6 +103,15 @@ trait UserTrait
         }
 
         return $requireAll;
+    }
+
+    /**
+     * @param string $modelNamespace
+     * @param $ids
+     */
+    public function hasModelPermission(string $modelNamespace, $ids)
+    {
+        return $userModelPermissions = $this->modelPermissions($modelNamespace)->get();
     }
 
     /**

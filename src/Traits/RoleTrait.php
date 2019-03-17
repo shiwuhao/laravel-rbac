@@ -8,8 +8,14 @@
 
 namespace Shiwuhao\Rbac\Traits;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
+/**
+ * Trait RoleModelTrait
+ * @package Shiwuhao\Rbac\Traits
+ */
 trait RoleTrait
 {
     /**
@@ -22,12 +28,12 @@ trait RoleTrait
         return $this->belongsToMany(
             config('rbac.model.user'),
             config('rbac.table.role_user'),
-            config('rbac.foreign_key.role'),
-            config('rbac.foreign_key.user'));
+            config('rbac.foreignKey.role'),
+            config('rbac.foreignKey.user'));
     }
 
     /**
-     * 获取角色小的权限
+     * 获取角色下的权限节点
      * 权限 角色 多对多关联
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
@@ -36,12 +42,23 @@ trait RoleTrait
         return $this->belongsToMany(
             config('rbac.model.permission'),
             config('rbac.table.permission_role'),
-            config('rbac.foreign_key.role'),
-            config('rbac.foreign_key.permission'));
+            config('rbac.foreignKey.role'),
+            config('rbac.foreignKey.permission'));
     }
 
     /**
-     * 将多个权限附加到当前角色
+     * 获取角色下的指定模型的 模型权限
+     * 多对多多态关联 反向关联
+     * @param string $modelNamespace
+     * @return MorphToMany
+     */
+    public function modelPermissions(string $modelNamespace): MorphToMany
+    {
+        return $this->morphedByMany($modelNamespace, 'modelable', config('rbac.table.model_permissions'))->withTimestamps();
+    }
+
+    /**
+     * 添加某个或多个权限到当前角色
      * @param $permissions
      */
     public function attachPermissions($permissions)
@@ -50,7 +67,7 @@ trait RoleTrait
     }
 
     /**
-     * 从当前角色分离多个权限
+     * 删除某个或多个权限到当前角色
      * @param null $permissions
      * @return int
      */
@@ -62,12 +79,46 @@ trait RoleTrait
     }
 
     /**
-     * 从当前角色同步多个权限
+     * 同步某个或多个权限到当前角色
      * @param $permissions
      * @return array
      */
     public function syncPermissions($permissions)
     {
         return $this->permissions()->sync($permissions);
+    }
+
+    /**
+     * 删除某个或多个模型权限到当前角色
+     * @param string $modelNamespace
+     * @param $ids
+     */
+    public function attachModelPermissions(string $modelNamespace, $ids)
+    {
+        $this->modelPermissions($modelNamespace)->attach($ids);
+    }
+
+    /**
+     * 添加某个或多个模型权限到当前角色
+     * @param string $modelNamespace
+     * @param null $ids
+     * @return int
+     */
+    public function detachModelPermissions(string $modelNamespace, $ids = null)
+    {
+        if (!$ids) $ids = $this->modelPermissions($modelNamespace)->get();
+
+        return $this->modelPermissions($modelNamespace)->detach($ids);
+    }
+
+    /**
+     * 同步某个或多个模型权限到当前角色
+     * @param string $modelNamespace
+     * @param $ids
+     * @return array
+     */
+    public function syncModelPermissions(string $modelNamespace, $ids)
+    {
+        return $this->modelPermissions($modelNamespace)->sync($ids);
     }
 }

@@ -13,7 +13,6 @@ use Shiwuhao\Rbac\Traits\RoleTrait;
  */
 class Role extends Model implements RoleInterface
 {
-
     use RoleTrait;
 
     /**
@@ -25,5 +24,4 @@ class Role extends Model implements RoleInterface
         parent::__construct($attributes);
         $this->setTable(config('rbac.table.roles'));
     }
-
 }
