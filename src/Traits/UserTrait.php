@@ -47,6 +47,7 @@ trait UserTrait
      */
     public function modelPermissions($modelNamespace)
     {
+
         return $this->roles()->with(['modelPermissions'=>function ($re) use($modelNamespace) {
             return $re->modelPermissions($modelNamespace);
         }]);
