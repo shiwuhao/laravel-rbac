@@ -8,8 +8,10 @@
 
 namespace Shiwuhao\Rbac\Traits;
 
+use App\Role;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
 
 /**
  * Trait UserTrait
@@ -47,72 +49,7 @@ trait UserTrait
      */
     public function modelPermissions($modelNamespace)
     {
-
-        return $this->roles()->with(['modelPermissions'=>function ($re) use($modelNamespace) {
-            return $re->modelPermissions($modelNamespace);
-        }]);
-    }
-
-    /**
-     * 检测用户是否含有某个或多个角色
-     * @param string|array $roles
-     * @param bool $requireAll
-     * @return bool
-     */
-    public function hasRole($roles, $requireAll = false)
-    {
-        $delimiter = config('rbac.delimiter', '|');
-        $roles = is_array($roles) ? $roles : explode($delimiter, trim($roles, $delimiter));
-        $userRoleNames = $this->roles()->get()->pluck('name');
-
-        foreach ($roles as $name) {
-            $has = $userRoleNames->contains($name);
-
-            if ($requireAll == true && $has == false) {
-                return false;
-            }
-
-            if ($requireAll == false && $has == true) {
-                return true;
-            }
-        }
-
-        return $requireAll;
-    }
-
-    /**
-     * 检测用户是否含有某个或多个节点
-     * @param string|array $permissions
-     * @param bool $requireAll
-     * @return bool
-     */
-    public function hasPermission($permissions, $requireAll = false)
-    {
-        $delimiter = config('rbac.delimiter', '|');
-        $permissions = is_array($permissions) ? $permissions : explode($delimiter, trim($permissions, $delimiter));
-        $userPermissionNames = $this->permissions()->get()->pluck('permissions')->collapse()->pluck('name')->unique();
-        foreach ($permissions as $permission) {
-            $has = $userPermissionNames->contains($permission);
-
-            if ($requireAll == true && $has == false) {
-                return false;
-            }
-
-            if ($requireAll == false && $has == true) {
-                return true;
-            }
-        }
-
-        return $requireAll;
-    }
-
-    /**
-     * @param string $modelNamespace
-     * @param $ids
-     */
-    public function hasModelPermission(string $modelNamespace, $ids)
-    {
-        return $userModelPermissions = $this->modelPermissions($modelNamespace)->get();
+        return $this->roles()->with('categories');
     }
 
     /**
@@ -144,4 +81,74 @@ trait UserTrait
         return $this->roles()->sync($roles);
     }
 
+    /**
+     * 检测用户是否含有某个或多个角色
+     * @param string|array $roles
+     * @param bool $requireAll
+     * @return bool
+     */
+    public function hasRole($roles, $requireAll = false)
+    {
+        $roles = $this->parsePermissions($roles);
+        $collectNames = $this->roles()->get()->pluck('name');
+
+        return $this->contains($collectNames, $roles, $requireAll);
+    }
+
+    /**
+     * 检测用户是否含有某个或多个节点
+     * @param string|array $permissions
+     * @param bool $requireAll
+     * @return bool
+     */
+    public function hasPermission($permissions, $requireAll = false)
+    {
+        $permissions = $this->parsePermissions($permissions);
+        $collectNames = $this->permissions()->get()->pluck('permissions')->collapse()->pluck('name')->unique();
+
+        return $this->contains($collectNames, $permissions, $requireAll);
+    }
+
+    /**
+     * 检测用户是否含有某个或多个分类模型节点
+     * @param $categories
+     * @param bool $requireAll
+     * @return bool
+     */
+    public function hasCategories($categories, $requireAll = false)
+    {
+        $categories = $this->parsePermissions($categories);
+        $collectIds = $this->roles()->with('categories')->get()->pluck('categories')->collapse()->pluck('id')->unique();
+
+        return $this->contains($collectIds, $categories, $requireAll);
+    }
+
+    /**
+     * 判断集合是否包含给定的项目
+     * @param Collection $subject
+     * @param array $search
+     * @param bool $requireAll
+     * @return bool
+     */
+    protected function contains(Collection $subject, array $search, $requireAll = false)
+    {
+        foreach ($search as $item) {
+            $has = $subject->contains($item);
+            if ($requireAll == true && $has == false) return false;
+            if ($requireAll == false && $has == true) return true;
+        }
+
+        return $requireAll;
+    }
+
+    /**
+     * 解析数据格式
+     * @param $permissions
+     * @return array
+     */
+    protected function parsePermissions($permissions)
+    {
+        $delimiter = config('rbac.delimiter', '|');
+        return $permissions = is_array($permissions) ? $permissions : explode($delimiter, trim($permissions, $delimiter));
+    }
 }
