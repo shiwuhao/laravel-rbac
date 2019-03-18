@@ -26,6 +26,7 @@ return [
         'permission' => 'permission_id',
     ],
 
+
     // 定界符
     'delimiter' => '|',
 
