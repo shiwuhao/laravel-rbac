@@ -110,10 +110,11 @@ trait RoleTrait
      * @param string $modelNamespace
      * @param $ids
      */
-    public function attachPermissionModels(string $methodName, $ids)
+    public function attachPermissionModels(string $related, $ids)
     {
-        $this->validateMethodByPermissionModels($methodName);
-        $this->$methodName()->attach($ids);
+        $related = $this->parsePermissionModels($related);
+
+        $this->$related()->attach($ids);
     }
 
     /**
@@ -122,13 +123,13 @@ trait RoleTrait
      * @param null $ids
      * @return int
      */
-    public function detachPermissionModels(string $methodName, $ids = null)
+    public function detachPermissionModels(string $related, $ids = null)
     {
-        $this->validateMethodByPermissionModels($methodName);
+        $related = $this->parsePermissionModels($related);
 
-        if (!$ids) $ids = $this->$methodName()->get();
+        if (!$ids) $ids = $this->$related()->get();
 
-        return $this->$methodName()->detach($ids);
+        return $this->$related()->detach($ids);
     }
 
     /**
@@ -137,23 +138,26 @@ trait RoleTrait
      * @param $ids
      * @return array
      */
-    public function syncPermissionModels(string $methodName, $ids)
+    public function syncPermissionModels(string $related, $ids)
     {
-        $this->validateMethodByPermissionModels($methodName);
+        $related = $this->parsePermissionModels($related);
 
-        return $this->$methodName()->sync($ids);
+        return $this->$related()->sync($ids);
     }
 
     /**
-     * 验证 $methodName 是否存在
-     * @param string $methodName
+     * 解析 $related 数据格式
+     * @param string $related
      */
-    protected function validateMethodByPermissionModels(string $methodName)
+    protected function parsePermissionModels(string $related)
     {
         $permissionModelConfig = config('rbac.permissionModel');
-        if (!in_array($methodName, $permissionModelConfig)) {
-            throw new InvalidArgumentException("method {$methodName} not exists in {____}");
+        $related = strpos($related, '\\') === false ? $related : $permissionModelConfig[$related];
+        if (!in_array($related, $permissionModelConfig)) {
+            throw new InvalidArgumentException("method $related noe exists");
         }
+
+        return $related;
     }
 
     /**
