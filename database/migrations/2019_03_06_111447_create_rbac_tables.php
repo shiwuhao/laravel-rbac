@@ -15,9 +15,12 @@ class CreateRbacTables extends Migration
      */
     public function up()
     {
+        $tableName = config('rbac.table');
+        $foreignKey = config('rbac.foreignKey');
+
         DB::beginTransaction();
 
-        Schema::create('roles', function (Blueprint $table) {
+        Schema::create($tableName['roles'], function (Blueprint $table) {
             $table->increments('id');
             $table->string('name')->comment('角色唯一标识');
             $table->string('display_name')->default('角色显示名称');
@@ -25,16 +28,7 @@ class CreateRbacTables extends Migration
             $table->timestamps();
         });
 
-        Schema::create('role_user', function (Blueprint $table) {
-            $table->unsignedInteger('user_id');
-            $table->unsignedInteger('role_id');
-
-            $table->foreign('user_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
-            $table->foreign('role_id')->references('id')->on('roles')->onUpdate('cascade')->onDelete('cascade');
-            $table->primary(['user_id', 'role_id']);
-        });
-
-        Schema::create('permissions', function (Blueprint $table) {
+        Schema::create($tableName['permissions'], function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('pid')->default(0);
             $table->string('name')->default('')->comment('节点唯一标识');
@@ -44,22 +38,31 @@ class CreateRbacTables extends Migration
             $table->timestamps();
         });
 
-        Schema::create('permission_role', function (Blueprint $table) {
-            $table->unsignedInteger('permission_id');
-            $table->unsignedInteger('role_id');
+        Schema::create($tableName['roleUser'], function (Blueprint $table) use ($tableName, $foreignKey) {
+            $table->unsignedInteger($foreignKey['user']);
+            $table->unsignedInteger($foreignKey['role']);
 
-            $table->foreign('permission_id')->references('id')->on('permissions')->onUpdate('cascade')->onDelete('cascade');
-            $table->foreign('role_id')->references('id')->on('roles')->onUpdate('cascade')->onDelete('cascade');
-            $table->primary(['permission_id', 'role_id']);
+            $table->foreign($foreignKey['user'])->references('id')->on($tableName['users'])->onUpdate('cascade')->onDelete('cascade');
+            $table->foreign($foreignKey['role'])->references('id')->on($tableName['roles'])->onUpdate('cascade')->onDelete('cascade');
+            $table->primary([$foreignKey['user'], $foreignKey['role']]);
         });
 
-        Schema::create('model_permissions', function (Blueprint $table) {
+        Schema::create($tableName['permissionRole'], function (Blueprint $table) use ($tableName, $foreignKey) {
+            $table->unsignedInteger($foreignKey['permission']);
+            $table->unsignedInteger($foreignKey['role']);
+
+            $table->foreign($foreignKey['permission'])->references('id')->on($tableName['permissions'])->onUpdate('cascade')->onDelete('cascade');
+            $table->foreign($foreignKey['role'])->references('id')->on($tableName['roles'])->onUpdate('cascade')->onDelete('cascade');
+            $table->primary([$foreignKey['permission'], $foreignKey['role']]);
+        });
+
+        Schema::create($tableName['permissionModel'], function (Blueprint $table) use ($tableName, $foreignKey) {
             $table->increments('id');
-            $table->unsignedInteger('role_id')->comment('角色ID');
+            $table->unsignedInteger($foreignKey['role'])->comment('角色ID');
             $table->morphs('modelable');
             $table->timestamps();
 
-            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
+            $table->foreign($foreignKey['role'])->references('id')->on($tableName['roles'])->onDelete('cascade');
         });
 
         DB::commit();
@@ -72,9 +75,11 @@ class CreateRbacTables extends Migration
      */
     public function down()
     {
-        Schema::drop('permission_role');
-        Schema::drop('permissions');
-        Schema::drop('role_user');
-        Schema::drop('roles');
+        $tableName = config('rbac.table');
+
+        Schema::drop($tableName['permissionRole']);
+        Schema::drop($tableName['permissions']);
+        Schema::drop($tableName['roleUser']);
+        Schema::drop($tableName['roles']);
     }
 }

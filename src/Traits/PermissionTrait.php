@@ -21,7 +21,7 @@ trait PermissionTrait
     {
         return $this->belongsToMany(
             config('rbac.model.permission'),
-            config('rbac.table.permission_role'),
+            config('rbac.table.permissionRole'),
             config('rbac.foreignKey.permission'),
             config('rbac.foreignKey.role'));
     }

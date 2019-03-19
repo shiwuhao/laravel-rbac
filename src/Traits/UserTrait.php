@@ -12,6 +12,7 @@ use App\Role;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
+use Shiwuhao\Rbac\Exceptions\InvalidArgumentException;
 
 /**
  * Trait UserTrait
@@ -28,7 +29,7 @@ trait UserTrait
     {
         return $this->belongsToMany(
             config('rbac.model.role'),
-            config('rbac.table.role_user'),
+            config('rbac.table.roleUser'),
             config('rbac.foreignKey.user'),
             config('rbac.foreignKey.role'));
     }
@@ -115,12 +116,17 @@ trait UserTrait
      * @param bool $requireAll
      * @return bool
      */
-    public function hasCategories($categories, $requireAll = false)
+    public function hasPermissionModel($related, $modelIds, $requireAll = false)
     {
-        $categories = $this->parsePermissions($categories);
-        $collectIds = $this->roles()->with('categories')->get()->pluck('categories')->collapse()->pluck('id')->unique();
+        $permissionModelConfig = config('rbac.permissionModel');
+        $related = strpos($related, '\\') === false ? $related : $permissionModelConfig[$related];
+        if (!in_array($related, $permissionModelConfig)) {
+            throw new InvalidArgumentException("method $related noe exists");
+        }
+        $modelIds = $this->parsePermissions($modelIds);
+        $collectIds = $this->roles()->with($related)->get()->pluck($related)->collapse()->pluck('id')->unique();
 
-        return $this->contains($collectIds, $categories, $requireAll);
+        return $this->contains($collectIds, $modelIds, $requireAll);
     }
 
     /**

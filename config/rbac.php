@@ -13,10 +13,10 @@ return [
     'table' => [
         'users' => 'users',
         'roles' => 'roles',
-        'role_user' => 'role_user',
+        'roleUser' => 'role_user',
         'permissions' => 'permissions',
-        'permission_role' => 'permission_role',
-        'model_permissions' => 'model_permissions',
+        'permissionRole' => 'permission_role',
+        'permissionModel' => 'permission_model',
     ],
 
     // 外键
@@ -26,6 +26,10 @@ return [
         'permission' => 'permission_id',
     ],
 
+    // 模型授权
+    'permissionModel' => [
+//        'categories' => \App\Category::class,
+    ],
 
     // 定界符
     'delimiter' => '|',

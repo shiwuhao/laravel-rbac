@@ -12,6 +12,7 @@ use App\Category;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Shiwuhao\Rbac\Exceptions\InvalidArgumentException;
 
 /**
  * Trait RoleModelTrait
@@ -19,6 +20,21 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  */
 trait RoleTrait
 {
+    /**
+     * @var array
+     */
+    protected static $methods = [];
+
+    /**
+     * boot
+     * @throws InvalidArgumentException
+     */
+    public static function boot()
+    {
+        parent::boot();
+//        static::initPermissionModel();
+    }
+
     /**
      * 获取角色下的用户
      * 用户 角色 多对多关联
@@ -28,7 +44,7 @@ trait RoleTrait
     {
         return $this->belongsToMany(
             config('rbac.model.user'),
-            config('rbac.table.role_user'),
+            config('rbac.table.roleUser'),
             config('rbac.foreignKey.role'),
             config('rbac.foreignKey.user'));
     }
@@ -42,7 +58,7 @@ trait RoleTrait
     {
         return $this->belongsToMany(
             config('rbac.model.permission'),
-            config('rbac.table.permission_role'),
+            config('rbac.table.permissionRole'),
             config('rbac.foreignKey.role'),
             config('rbac.foreignKey.permission'));
     }
@@ -55,7 +71,7 @@ trait RoleTrait
      */
     public function modelPermissions(string $modelNamespace): MorphToMany
     {
-        return $this->morphedByMany($modelNamespace, 'modelable', config('rbac.table.model_permissions'))->withTimestamps();
+        return $this->morphedByMany($modelNamespace, 'modelable', config('rbac.table.permissionModel'))->withTimestamps();
     }
 
     /**
@@ -94,9 +110,10 @@ trait RoleTrait
      * @param string $modelNamespace
      * @param $ids
      */
-    public function attachModelPermissions(string $modelNamespace, $ids)
+    public function attachPermissionModels(string $methodName, $ids)
     {
-        $this->modelPermissions($modelNamespace)->attach($ids);
+        $this->validateMethodByPermissionModels($methodName);
+        $this->$methodName()->attach($ids);
     }
 
     /**
@@ -105,11 +122,13 @@ trait RoleTrait
      * @param null $ids
      * @return int
      */
-    public function detachModelPermissions(string $modelNamespace, $ids = null)
+    public function detachPermissionModels(string $methodName, $ids = null)
     {
-        if (!$ids) $ids = $this->modelPermissions($modelNamespace)->get();
+        $this->validateMethodByPermissionModels($methodName);
 
-        return $this->modelPermissions($modelNamespace)->detach($ids);
+        if (!$ids) $ids = $this->$methodName()->get();
+
+        return $this->$methodName()->detach($ids);
     }
 
     /**
@@ -118,9 +137,67 @@ trait RoleTrait
      * @param $ids
      * @return array
      */
-    public function syncModelPermissions(string $modelNamespace, $ids)
+    public function syncPermissionModels(string $methodName, $ids)
     {
-        return $this->modelPermissions($modelNamespace)->sync($ids);
+        $this->validateMethodByPermissionModels($methodName);
+
+        return $this->$methodName()->sync($ids);
     }
 
+    /**
+     * 验证 $methodName 是否存在
+     * @param string $methodName
+     */
+    protected function validateMethodByPermissionModels(string $methodName)
+    {
+        $permissionModelConfig = config('rbac.permissionModel');
+        if (!in_array($methodName, $permissionModelConfig)) {
+            throw new InvalidArgumentException("method {$methodName} not exists in {____}");
+        }
+    }
+
+    /**
+     * 初始化模型授权
+     */
+    protected static function initPermissionModel()
+    {
+        if ($permissionModel = config('rbac.permissionModel')) {
+            foreach ($permissionModel as $methodName => $modelNamespace) {
+                self::addMethod($methodName, function ($self) use ($modelNamespace) {
+                    return $self->morphedByMany($modelNamespace, 'modelable', config('rbac.table.permissionModel'))->withTimestamps();
+                });
+            }
+        }
+    }
+
+    /**
+     * @param string $methodName
+     * @param callable $methodCallable
+     * @throws InvalidArgumentException
+     */
+    protected static function addMethod(string $methodName, callable $methodCallable)
+    {
+        if (!is_callable($methodCallable)) {
+            throw new InvalidArgumentException('Second param must be callable');
+        }
+
+        self::$methods[$methodName] = $methodCallable;
+    }
+
+    /**
+     * Handle dynamic method calls into the model.
+     *
+     * @param  string $method
+     * @param  array $parameters
+     * @return mixed
+     */
+    public function __call($method, $parameters)
+    {
+        if (isset(self::$methods[$method])) {
+            array_unshift($parameters, $this);
+            return call_user_func_array(self::$methods[$method], $parameters);
+        }
+
+        return parent::__call($method, $parameters);
+    }
 }
