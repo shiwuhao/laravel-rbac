@@ -8,8 +8,6 @@
 
 namespace Shiwuhao\Rbac\Traits;
 
-use App\Role;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 use Shiwuhao\Rbac\Exceptions\InvalidArgumentException;
@@ -41,16 +39,6 @@ trait UserTrait
     public function permissions()
     {
         return $this->roles()->with('permissions');
-    }
-
-    /**
-     * 模型授权
-     * 获取用户拥有的模型权限节点
-     * @return BelongsToMany
-     */
-    public function modelPermissions($modelNamespace)
-    {
-        return $this->roles()->with('categories');
     }
 
     /**
@@ -112,9 +100,11 @@ trait UserTrait
 
     /**
      * 检测用户是否含有某个或多个分类模型节点
-     * @param $categories
+     * @param $related
+     * @param $modelIds
      * @param bool $requireAll
      * @return bool
+     * @throws InvalidArgumentException
      */
     public function hasPermissionModel($related, $modelIds, $requireAll = false)
     {

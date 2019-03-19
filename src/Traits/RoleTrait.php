@@ -20,6 +20,8 @@ use Shiwuhao\Rbac\Exceptions\InvalidArgumentException;
  */
 trait RoleTrait
 {
+    use BaseTrait;
+
     /**
      * 获取角色下的用户
      * 用户 角色 多对多关联
@@ -46,17 +48,6 @@ trait RoleTrait
             config('rbac.table.permissionRole'),
             config('rbac.foreignKey.role'),
             config('rbac.foreignKey.permission'));
-    }
-
-    /**
-     * 获取角色下的指定模型的 模型权限
-     * 多对多多态关联 反向关联
-     * @param string $modelNamespace
-     * @return MorphToMany
-     */
-    public function modelPermissions(string $modelNamespace): MorphToMany
-    {
-        return $this->morphedByMany($modelNamespace, 'modelable', config('rbac.table.permissionModel'))->withTimestamps();
     }
 
     /**
@@ -139,7 +130,7 @@ trait RoleTrait
         $permissionModelConfig = config('rbac.permissionModel');
         $related = strpos($related, '\\') === false ? $related : $permissionModelConfig[$related];
         if (!in_array($related, $permissionModelConfig)) {
-            throw new InvalidArgumentException("method $related noe exists");
+            throw new InvalidArgumentException("method $related not exists");
         }
 
         return $related;
