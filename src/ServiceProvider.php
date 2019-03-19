@@ -10,6 +10,11 @@ namespace Shiwuhao\Rbac;
 
 
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
+use Shiwuhao\Rbac\Commands\AutoGeneratePermissions;
+use Shiwuhao\Rbac\Commands\CreatePermission;
+use Shiwuhao\Rbac\Commands\CreateRole;
+use Shiwuhao\Rbac\Contracts\PermissionInterface;
+use Shiwuhao\Rbac\Contracts\RoleInterface;
 
 /**
  * Class RbacServiceProvider
@@ -38,6 +43,8 @@ class ServiceProvider extends BaseServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../config/rbac.php', 'rbac');
         $this->registerRbacService();
         $this->registerAlias();
+        $this->registerCommand();
+        $this->registerModelBindings();
     }
 
     /**
@@ -56,6 +63,30 @@ class ServiceProvider extends BaseServiceProvider
     protected function registerAlias()
     {
         $this->app->alias(Rbac::class, 'rbac');
+    }
+
+    /**
+     * register command
+     */
+    protected function registerCommand()
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                AutoGeneratePermissions::class,
+                CreateRole::class,
+                CreatePermission::class,
+            ]);
+        }
+    }
+
+    /**
+     * register model bindings
+     */
+    protected function registerModelBindings()
+    {
+        $config = config('rbac.model');
+        $this->app->bind(RoleInterface::class, $config['role']);
+        $this->app->bind(PermissionInterface::class, $config['permission']);
     }
 
     /**
