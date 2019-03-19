@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  * Trait ModelPermissionTrait
  * @package Shiwuhao\Rbac\Traits
  */
-trait ModelPermissionTrait
+trait PermissionModelsTrait
 {
     /**
      * 模型授权 获取指定模型所有角色
