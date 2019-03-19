@@ -45,9 +45,9 @@ trait AuthorizesRequestTrait
      * @param $id
      * @param Model $model
      */
-    public function hasModelPermission($id, Model $model)
+    public function hasPermissionModel($id, Model $model)
     {
-        if (Auth::guest() || !Auth::user()->hasModelPermission($id, $model)) {
+        if (Auth::guest() || !Auth::user()->hasPermissionModel($id, $model)) {
             abort(403);
         }
     }
