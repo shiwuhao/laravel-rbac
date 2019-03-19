@@ -8,10 +8,7 @@
 
 namespace Shiwuhao\Rbac\Traits;
 
-use App\Category;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Shiwuhao\Rbac\Exceptions\InvalidArgumentException;
 
 /**
@@ -20,8 +17,6 @@ use Shiwuhao\Rbac\Exceptions\InvalidArgumentException;
  */
 trait RoleTrait
 {
-    use BaseTrait;
-
     /**
      * 获取角色下的用户
      * 用户 角色 多对多关联
