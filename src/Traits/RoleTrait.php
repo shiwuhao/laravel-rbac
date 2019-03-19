@@ -21,21 +21,6 @@ use Shiwuhao\Rbac\Exceptions\InvalidArgumentException;
 trait RoleTrait
 {
     /**
-     * @var array
-     */
-    protected static $methods = [];
-
-    /**
-     * boot
-     * @throws InvalidArgumentException
-     */
-    public static function boot()
-    {
-        parent::boot();
-//        static::initPermissionModel();
-    }
-
-    /**
      * 获取角色下的用户
      * 用户 角色 多对多关联
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
@@ -158,50 +143,5 @@ trait RoleTrait
         }
 
         return $related;
-    }
-
-    /**
-     * 初始化模型授权
-     */
-    protected static function initPermissionModel()
-    {
-        if ($permissionModel = config('rbac.permissionModel')) {
-            foreach ($permissionModel as $methodName => $modelNamespace) {
-                self::addMethod($methodName, function ($self) use ($modelNamespace) {
-                    return $self->morphedByMany($modelNamespace, 'modelable', config('rbac.table.permissionModel'))->withTimestamps();
-                });
-            }
-        }
-    }
-
-    /**
-     * @param string $methodName
-     * @param callable $methodCallable
-     * @throws InvalidArgumentException
-     */
-    protected static function addMethod(string $methodName, callable $methodCallable)
-    {
-        if (!is_callable($methodCallable)) {
-            throw new InvalidArgumentException('Second param must be callable');
-        }
-
-        self::$methods[$methodName] = $methodCallable;
-    }
-
-    /**
-     * Handle dynamic method calls into the model.
-     *
-     * @param  string $method
-     * @param  array $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        if (isset(self::$methods[$method])) {
-            array_unshift($parameters, $this);
-            return call_user_func_array(self::$methods[$method], $parameters);
-        }
-
-        return parent::__call($method, $parameters);
     }
 }
