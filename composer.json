@@ -26,10 +26,5 @@
         "Rbac": "Shiwuhao\\Rbac\\Rbac"
       }
     }
-  },
-  "require-dev": {
-    "laravel/framework": "^5.8",
-    "mockery/mockery": "^1.2",
-    "phpunit/phpunit": "^8.0"
   }
 }
