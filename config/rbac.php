@@ -28,7 +28,7 @@ return [
 
     // 模型授权
     'permissionModel' => [
-//        'categories' => \App\Category::class,
+//        \App\Category::class => 'categories',
     ],
 
     // 定界符
