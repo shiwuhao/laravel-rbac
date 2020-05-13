@@ -42,8 +42,6 @@ class CreateRbacTables extends Migration
             $table->unsignedBigInteger($foreignKey['user']);
             $table->unsignedBigInteger($foreignKey['role']);
 
-            $table->foreign($foreignKey['user'])->references('id')->on($tableName['users'])->onUpdate('cascade')->onDelete('cascade');
-            $table->foreign($foreignKey['role'])->references('id')->on($tableName['roles'])->onUpdate('cascade')->onDelete('cascade');
             $table->primary([$foreignKey['user'], $foreignKey['role']]);
         });
 
@@ -51,8 +49,6 @@ class CreateRbacTables extends Migration
             $table->unsignedBigInteger($foreignKey['permission']);
             $table->unsignedBigInteger($foreignKey['role']);
 
-            $table->foreign($foreignKey['permission'])->references('id')->on($tableName['permissions'])->onUpdate('cascade')->onDelete('cascade');
-            $table->foreign($foreignKey['role'])->references('id')->on($tableName['roles'])->onUpdate('cascade')->onDelete('cascade');
             $table->primary([$foreignKey['permission'], $foreignKey['role']]);
         });
 
@@ -61,8 +57,6 @@ class CreateRbacTables extends Migration
             $table->unsignedBigInteger($foreignKey['role'])->comment('角色ID');
             $table->morphs('modelable');
             $table->timestamps();
-
-            $table->foreign($foreignKey['role'])->references('id')->on($tableName['roles'])->onDelete('cascade');
         });
 
         DB::commit();
