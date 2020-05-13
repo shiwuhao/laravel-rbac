@@ -21,7 +21,7 @@ class CreateRbacTables extends Migration
         DB::beginTransaction();
 
         Schema::create($tableName['roles'], function (Blueprint $table) {
-            $table->increments('id');
+            $table->id('id');
             $table->string('name')->comment('角色唯一标识');
             $table->string('display_name')->default('角色显示名称');
             $table->string('description')->default('角色描述');
@@ -29,8 +29,8 @@ class CreateRbacTables extends Migration
         });
 
         Schema::create($tableName['permissions'], function (Blueprint $table) {
-            $table->increments('id');
-            $table->unsignedInteger('pid')->default(0);
+            $table->id('id');
+            $table->unsignedBigInteger('pid')->default(0);
             $table->string('name')->default('')->comment('节点唯一标识');
             $table->string('display_name')->default('')->comment('节点显示名称');
             $table->string('description')->default('')->comment('节点描述');
@@ -39,8 +39,8 @@ class CreateRbacTables extends Migration
         });
 
         Schema::create($tableName['roleUser'], function (Blueprint $table) use ($tableName, $foreignKey) {
-            $table->unsignedInteger($foreignKey['user']);
-            $table->unsignedInteger($foreignKey['role']);
+            $table->unsignedBigInteger($foreignKey['user']);
+            $table->unsignedBigInteger($foreignKey['role']);
 
             $table->foreign($foreignKey['user'])->references('id')->on($tableName['users'])->onUpdate('cascade')->onDelete('cascade');
             $table->foreign($foreignKey['role'])->references('id')->on($tableName['roles'])->onUpdate('cascade')->onDelete('cascade');
@@ -48,8 +48,8 @@ class CreateRbacTables extends Migration
         });
 
         Schema::create($tableName['permissionRole'], function (Blueprint $table) use ($tableName, $foreignKey) {
-            $table->unsignedInteger($foreignKey['permission']);
-            $table->unsignedInteger($foreignKey['role']);
+            $table->unsignedBigInteger($foreignKey['permission']);
+            $table->unsignedBigInteger($foreignKey['role']);
 
             $table->foreign($foreignKey['permission'])->references('id')->on($tableName['permissions'])->onUpdate('cascade')->onDelete('cascade');
             $table->foreign($foreignKey['role'])->references('id')->on($tableName['roles'])->onUpdate('cascade')->onDelete('cascade');
@@ -57,8 +57,8 @@ class CreateRbacTables extends Migration
         });
 
         Schema::create($tableName['permissionModel'], function (Blueprint $table) use ($tableName, $foreignKey) {
-            $table->increments('id');
-            $table->unsignedInteger($foreignKey['role'])->comment('角色ID');
+            $table->id('id');
+            $table->unsignedBigInteger($foreignKey['role'])->comment('角色ID');
             $table->morphs('modelable');
             $table->timestamps();
 
