@@ -93,30 +93,9 @@ trait UserTrait
     public function hasPermission($permissions, $requireAll = false)
     {
         $permissions = $this->parsePermissions($permissions);
-        $collectNames = $this->permissions()->get()->pluck('permissions')->collapse()->pluck('name')->unique();
+        $collectNames = $this->permissions()->get()->pluck('permissions')->collapse()->pluck(['method', 'url'])->unique();
 
         return $this->contains($collectNames, $permissions, $requireAll);
-    }
-
-    /**
-     * 检测用户是否含有某个或多个分类模型节点
-     * @param $related
-     * @param $modelIds
-     * @param bool $requireAll
-     * @return bool
-     * @throws InvalidArgumentException
-     */
-    public function hasPermissionModel($related, $modelIds, $requireAll = false)
-    {
-        $permissionModelConfig = config('rbac.permissionModel');
-        $related = strpos($related, '\\') === false ? $related : $permissionModelConfig[$related];
-        if (!in_array($related, $permissionModelConfig)) {
-            throw new InvalidArgumentException("method $related noe exists");
-        }
-        $modelIds = $this->parsePermissions($modelIds);
-        $collectIds = $this->roles()->with($related)->get()->pluck($related)->collapse()->pluck('id')->unique();
-
-        return $this->contains($collectIds, $modelIds, $requireAll);
     }
 
     /**

@@ -22,20 +22,24 @@ class CreateRbacTables extends Migration
 
         Schema::create($tableName['roles'], function (Blueprint $table) {
             $table->id('id');
-            $table->string('name')->comment('角色唯一标识');
-            $table->string('display_name')->default('角色显示名称');
-            $table->string('description')->default('角色描述');
+            $table->string('name')->comment('唯一标识');
+            $table->string('title')->default('显示名称');
+            $table->string('remark')->default('备注');
             $table->timestamps();
         });
 
         Schema::create($tableName['permissions'], function (Blueprint $table) {
             $table->id('id');
             $table->unsignedBigInteger('pid')->default(0);
-            $table->string('name')->default('')->comment('节点唯一标识');
-            $table->string('display_name')->default('')->comment('节点显示名称');
-            $table->string('description')->default('')->comment('节点描述');
-            $table->string('action')->default('');
+            $table->string('name')->default('')->comment('唯一标识');
+            $table->string('title')->default('')->comment('显示名称');
+            $table->string('method')->default('')->comment('请求方式');
+            $table->string('url')->default('')->comment('url');
+            $table->string('remark')->default('')->comment('备注');
             $table->timestamps();
+
+            $table->unique(['method', 'url']);
+            $table->unique(['name']);
         });
 
         Schema::create($tableName['roleUser'], function (Blueprint $table) use ($tableName, $foreignKey) {
@@ -50,13 +54,6 @@ class CreateRbacTables extends Migration
             $table->unsignedBigInteger($foreignKey['role']);
 
             $table->primary([$foreignKey['permission'], $foreignKey['role']]);
-        });
-
-        Schema::create($tableName['permissionModel'], function (Blueprint $table) use ($tableName, $foreignKey) {
-            $table->id('id');
-            $table->unsignedBigInteger($foreignKey['role'])->comment('角色ID');
-            $table->morphs('modelable');
-            $table->timestamps();
         });
 
         DB::commit();

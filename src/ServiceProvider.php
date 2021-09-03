@@ -13,6 +13,7 @@ use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use Shiwuhao\Rbac\Commands\AutoGeneratePermissions;
 use Shiwuhao\Rbac\Commands\CreatePermission;
 use Shiwuhao\Rbac\Commands\CreateRole;
+use Shiwuhao\Rbac\Commands\GeneratePermissions;
 use Shiwuhao\Rbac\Contracts\PermissionInterface;
 use Shiwuhao\Rbac\Contracts\RoleInterface;
 
@@ -73,6 +74,7 @@ class ServiceProvider extends BaseServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 AutoGeneratePermissions::class,
+                GeneratePermissions::class,
                 CreateRole::class,
                 CreatePermission::class,
             ]);

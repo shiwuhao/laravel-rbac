@@ -16,7 +16,6 @@ return [
         'roleUser' => 'role_user',
         'permissions' => 'permissions',
         'permissionRole' => 'permission_role',
-        'permissionModel' => 'permission_model',
     ],
 
     // 外键

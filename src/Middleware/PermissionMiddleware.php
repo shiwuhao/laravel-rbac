@@ -17,9 +17,10 @@ class PermissionMiddleware
      * @param $permissions
      * @return mixed
      */
-    public function handle($request, Closure $next, $permissions)
+    public function handle($request, Closure $next)
     {
-        if (Auth::guest() || !Auth::user()->hasPermission($permissions)) {
+        $permission = $request->method() . ',' . $request->route()->uri();
+        if (Auth::guest() || !Auth::user()->hasPermission($permission)) {
             abort(403);
         }
 
