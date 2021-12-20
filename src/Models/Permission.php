@@ -14,11 +14,14 @@ class Permission extends Model implements PermissionInterface
 {
     use PermissionTrait;
 
+    const TYPE_ACTION = 'action';
+    const TYPE_MENU = 'menu';
+
     /**
      * @var array
      */
     protected $fillable = [
-        'pid', 'name', 'title', 'remark', 'method', 'url',
+        'pid', 'type', 'name', 'title', 'icon', 'url', 'method'
     ];
 
     /**
@@ -29,5 +32,14 @@ class Permission extends Model implements PermissionInterface
     {
         parent::__construct($attributes);
         $this->setTable(config('rbac.table.permissions'));
+    }
+
+    /**
+     * 获取拥有此权限的模型
+     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
+     */
+    public function permissible(): \Illuminate\Database\Eloquent\Relations\MorphTo
+    {
+        return $this->morphTo();
     }
 }

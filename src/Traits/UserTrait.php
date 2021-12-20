@@ -10,7 +10,11 @@ namespace Shiwuhao\Rbac\Traits;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Shiwuhao\Rbac\Exceptions\InvalidArgumentException;
+use Shiwuhao\Rbac\Models\Permission;
+use Shiwuhao\Rbac\Models\RolePermission;
+use Shiwuhao\Rbac\Models\RoleUser;
 
 /**
  * Trait UserTrait
@@ -18,6 +22,22 @@ use Shiwuhao\Rbac\Exceptions\InvalidArgumentException;
  */
 trait UserTrait
 {
+    /**
+     * 超级管理员
+     * @return bool
+     */
+    public function isSuperAdministrator(): bool
+    {
+        return $this->id === 1;
+    }
+
+    public function isAdministrator()
+    {
+        if ($this->isSuperAdministrator()) {
+            return true;
+        }
+    }
+
     /**
      * 获取用户拥有的角色
      * 用户 角色 多对多关联
@@ -33,12 +53,56 @@ trait UserTrait
     }
 
     /**
-     * 获取用户拥有的权限节点
-     * @return BelongsToMany
+     * 用户的权限节点
+     * @return Collection
      */
-    public function permissions()
+    public function getPermissions($columns = ['*'])
     {
-        return $this->roles()->with('permissions');
+        $fileds = array_merge($columns, [DB::raw("CONCAT(`method`,',',`url`) as 'unique'")]);
+        if ($this->isAdministrator()) {
+            $permissions = Permission::query()->select($fileds)->latest('sort')->get();
+        } else {
+            $permissions = $this->roles()->with(['permissions' => function ($query) use ($fields) {
+                return $query->select($fileds);
+            }])->get()->pluck('permissions')->collapse()->unique('id')->values()->sortBy('sort');
+        }
+        return $permissions;
+    }
+
+    /**
+     * action 节点
+     * @return Collection
+     */
+    public function getPermissionActions($fields = ['*'])
+    {
+        return $this->getPermissions($fields)->filter(function ($item) {
+            return $item->type === Permission::TYPE_ACTION;
+        })->values();
+    }
+
+    /**
+     * menu 节点
+     * @return Collection
+     */
+    public function getPermissionMenus($fields = ['*'])
+    {
+        return $this->getPermissions($fields)->filter(function ($item) {
+            return $item->type === Permission::TYPE_MENU;
+        })->values();
+    }
+
+    /**
+     * 判断是否拥有该节点的权限
+     * @param $permission
+     * @return bool
+     */
+    public function hasPermission($permission)
+    {
+        if ($this->isSuperAdministrator()) {
+//            return true;
+        }
+        $actions = $this->getPermissionActions()->pluck('unique')->toArray();
+        return in_array($permission, $actions);
     }
 
     /**
@@ -90,13 +154,15 @@ trait UserTrait
      * @param bool $requireAll
      * @return bool
      */
-    public function hasPermission($permissions, $requireAll = false)
-    {
-        $permissions = $this->parsePermissions($permissions);
-        $collectNames = $this->permissions()->get()->pluck('permissions')->collapse()->pluck(['method', 'url'])->unique();
-
-        return $this->contains($collectNames, $permissions, $requireAll);
-    }
+//    public function hasPermission($permissions, $requireAll = false)
+//    {
+//        $permissions = $this->parsePermissions($permissions);
+//        $collectNames = $this->permissions()->get()->pluck('permissions')->collapse()->unique()->map(function ($item) {
+//            return ['name' => $item->method . ',' . $item->url];
+//        })->pluck('name');
+////        return $collectNames->toArray();
+//        return $this->contains($collectNames, $permissions, $requireAll);
+//    }
 
     /**
      * 判断集合是否包含给定的项目

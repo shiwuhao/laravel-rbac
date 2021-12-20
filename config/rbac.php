@@ -13,21 +13,11 @@ return [
     'table' => [
         'users' => 'users',
         'roles' => 'roles',
-        'roleUser' => 'role_user',
+        'menus' => 'menus',
+        'actions' => 'actions',
         'permissions' => 'permissions',
-        'permissionRole' => 'permission_role',
-    ],
-
-    // 外键
-    'foreignKey' => [
-        'role' => 'role_id',
-        'user' => 'user_id',
-        'permission' => 'permission_id',
-    ],
-
-    // 模型授权
-    'permissionModel' => [
-//        \App\Category::class => 'categories',
+        'role_user' => 'role_user',
+        'role+permission' => 'permission_role',
     ],
 
     // 定界符

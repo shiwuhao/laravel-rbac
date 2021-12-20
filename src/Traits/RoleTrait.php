@@ -26,7 +26,7 @@ trait RoleTrait
     {
         return $this->belongsToMany(
             config('rbac.model.user'),
-            config('rbac.table.roleUser'),
+            config('rbac.table.role_user'),
             config('rbac.foreignKey.role'),
             config('rbac.foreignKey.user'));
     }

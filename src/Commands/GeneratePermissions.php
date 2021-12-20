@@ -12,6 +12,7 @@ namespace Shiwuhao\Rbac\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Str;
+use Shiwuhao\Rbac\Models\Action;
 use Shiwuhao\Rbac\Models\Permission;
 
 
@@ -57,7 +58,8 @@ class GeneratePermissions extends Command
      */
     public function handle()
     {
-        $this->createTreePermissions();
+        $this->createPermissions();
+//        $this->createTreePermissions();
 
         $this->info("Creation Successful");
     }
@@ -65,10 +67,15 @@ class GeneratePermissions extends Command
     protected function createPermissions()
     {
         $routes = $this->getRoutes();
+
         foreach ($routes as $route) {
-            $condition = ['method' => strtolower($route['method']), 'url' => $route['uri']];
-            $data = array_merge($condition, ['name' => join(',', $condition)]);
-            Permission::updateOrCreate($condition, $data);
+
+            $title = Str::afterLast($route['action'], '\\');
+            $condition = ['url' => $route['uri'], 'method' => strtolower($route['method'])];
+            Action::updateOrCreate($condition, array_merge($condition, [
+                'name' => Str::replace('Controller@', ':', $title),
+                'title' => Str::afterLast($route['action'], '\\'),
+            ]));
         }
     }
 
@@ -76,14 +83,24 @@ class GeneratePermissions extends Command
     {
         $routes = $this->getRoutes();
         $groupRoutes = $this->getGroupRoutes($routes);
+
         foreach ($groupRoutes as $key => $children) {
-            $title = Str::afterLast($key, '\\');
-            $parent = Permission::updateOrCreate(['name' => $key], ['name' => $key, 'title' => $title]);
+            $name = Str::afterLast($key, '\\');
+            $condition = ['action' => $key, 'type' => 'menu'];
+            $data = array_merge($condition, ['name' => $name, 'title' => $name]);
+            $parent = Permission::firstOrCreate($condition, $data);
             foreach ($children as $route) {
                 $title = Str::afterLast($route['action'], '\\');
-                $condition = ['method' => strtolower($route['method']), 'url' => $route['uri'],];
-                $data = array_merge($condition, ['pid' => $parent->id, 'name' => join(',', $condition), 'title' => $title]);
-                Permission::updateOrCreate($condition, $data);
+                $url = strtolower($route['method']) . ',' . $route['uri'];
+                $condition = ['action' => $route['action'], 'type' => 'action'];
+
+                $data = array_merge($condition, [
+                    'pid' => $parent->id,
+                    'name' => Str::lower(Str::replace('Controller@', ':', $title)),
+                    'url' => $url,
+                    'title' => Str::afterLast($route['action'], '\\'),
+                ]);
+                Permission::firstOrCreate($condition, $data);
             }
         }
     }
@@ -123,20 +140,25 @@ class GeneratePermissions extends Command
             return false;
         }
 
-        if (($this->option('name') && !Str::contains($route['name'], $this->option('name'))) ||
-            $this->option('path') && !Str::contains($route['uri'], $this->option('path')) ||
-            $this->option('method') && !Str::contains($route['method'], strtoupper($this->option('method')))) {
-            return false;
-        }
-
-        if ($this->option('except-path')) {
-            foreach (explode(',', $this->option('except-path')) as $path) {
+        $exceptPaths = array_merge($this->option('except-path') ? explode(',', $this->option('except-path')) : [], config('rbac.except_path'));
+        if ($exceptPaths) {
+            foreach ($exceptPaths as $path) {
                 if (Str::contains($route['uri'], $path)) {
                     return false;
                 }
             }
         }
 
-        return $route;
+        $paths = array_merge($this->option('path') ? explode(',', $this->option('path')) : [], config('rbac.path'));
+        if ($paths) {
+            foreach ($paths as $path) {
+                if (Str::contains($route['uri'], $path)) {
+                    dump($route['uri'] . '|--|' . $path);
+                    return $route;
+                }
+            }
+        }
+
+        return false;
     }
 }
