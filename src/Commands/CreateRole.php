@@ -24,7 +24,7 @@ class CreateRole extends Command
      */
     protected $signature = 'rbac:create-role
                             {name : 角色唯一标识}
-                            {display_name : 角色显示名称}';
+                            {label : 角色显示名称}';
 
     /**
      * @var string
@@ -38,7 +38,7 @@ class CreateRole extends Command
     {
         $role = app(RoleInterface::class)::firstOrCreate(
             ['name' => $this->argument('name')],
-            ['display_name' => $this->argument('display_name')]
+            ['label' => $this->argument('label')]
         );
 
         $this->info("Role {$role->name} created");

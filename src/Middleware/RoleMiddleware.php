@@ -6,8 +6,7 @@ use Closure;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Class Role
- * @package Zizaco\Entrust\Middleware
+ * RoleMiddleware
  */
 class RoleMiddleware
 {
@@ -19,8 +18,8 @@ class RoleMiddleware
      */
     public function handle($request, Closure $next, $roles)
     {
-        if (Auth::guest() || !Auth::user()->hasRole($roles)) {
-            abort(403);
+        if (Auth::guest() || !$request->user()->hasRole($roles)) {
+            abort(403, 'forbidden');
         }
 
         return $next($request);

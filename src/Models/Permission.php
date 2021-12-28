@@ -3,8 +3,9 @@
 namespace Shiwuhao\Rbac\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Shiwuhao\Rbac\Contracts\PermissionInterface;
-use Shiwuhao\Rbac\Traits\PermissionTrait;
 
 /**
  * Class Permission
@@ -12,16 +13,11 @@ use Shiwuhao\Rbac\Traits\PermissionTrait;
  */
 class Permission extends Model implements PermissionInterface
 {
-    use PermissionTrait;
-
-    const TYPE_ACTION = 'action';
-    const TYPE_MENU = 'menu';
-
     /**
      * @var array
      */
     protected $fillable = [
-        'pid', 'type', 'name', 'title', 'icon', 'url', 'method'
+        'pid', 'name', 'label'
     ];
 
     /**
@@ -36,10 +32,24 @@ class Permission extends Model implements PermissionInterface
 
     /**
      * 获取拥有此权限的模型
-     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
+     * @return MorphTo
      */
-    public function permissible(): \Illuminate\Database\Eloquent\Relations\MorphTo
+    public function permissible(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * 获取拥有此节点的角色
+     * @return BelongsToMany
+     */
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            config('rbac.model.permission'),
+            config('rbac.table.role_permission'),
+            config('rbac.foreign_key.permission'),
+            config('rbac.foreign_key.role')
+        );
     }
 }

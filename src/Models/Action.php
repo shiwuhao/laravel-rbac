@@ -4,9 +4,30 @@ namespace Shiwuhao\Rbac\Models;
 
 
 use Illuminate\Database\Eloquent\Model;
+use Shiwuhao\Rbac\Contracts\PermissibleInterface;
+use Shiwuhao\Rbac\Models\Traits\PermissibleTrait;
 
-class Action extends Model
+/**
+ * Action Model
+ */
+class Action extends Model implements PermissibleInterface
 {
+    use PermissibleTrait;
+
+    /**
+     * @var string[]
+     */
+    protected $fillable = [
+        'name', 'label', 'method', 'uri',
+    ];
+
+    /**
+     * @var string[]
+     */
+    protected $appends = [
+        'alias'
+    ];
+
     /**
      * Role constructor.
      * @param array $attributes
@@ -18,11 +39,11 @@ class Action extends Model
     }
 
     /**
-     * 获取操作对应权限节点
-     * @return \Illuminate\Database\Eloquent\Relations\MorphOne
+     * alias
+     * @return string
      */
-    public function permission(): \Illuminate\Database\Eloquent\Relations\MorphOne
+    public function getAliasAttribute(): string
     {
-        return $this->morphOne(Permission::class, 'permissible');
+        return $this->method . ',' . $this->uri;
     }
 }

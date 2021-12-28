@@ -2,52 +2,56 @@
 
 return [
 
-    // 模型命名空间
+    // 模型
     'model' => [
-        'role' => 'App\Role',
         'user' => 'App\User',
-        'permission' => 'App\Permission',
+        'role' => \Shiwuhao\Rbac\Models\Role::class,
+        'action' => \Shiwuhao\Rbac\Models\Action::class,
+        'permission' => \Shiwuhao\Rbac\Models\Permission::class,
     ],
 
     // 表名称
     'table' => [
         'users' => 'users',
         'roles' => 'roles',
-        'menus' => 'menus',
         'actions' => 'actions',
         'permissions' => 'permissions',
         'role_user' => 'role_user',
-        'role+permission' => 'permission_role',
+        'role_permission' => 'role_permission',
     ],
 
-    // 定界符
-    'delimiter' => '|',
+    // 外键
+    'foreign_key' => [
+        'role' => 'role_id',
+        'user' => 'user_id',
+        'permission' => 'permission_id',
+    ],
 
-    // 控制器action label 替换
-    'resourceAbilityMapLabel' => [
+    // action labels 替换
+    'action_label_replace' => [
         'index' => '列表',
         'show' => '详情',
-        'create' => '新增',
         'store' => '新增',
-        'edit' => '更新',
         'update' => '更新',
         'destroy' => '删除',
-        'restore' => '恢复',
     ],
 
-    // 控制器action name 替换
-    'resourceAbilityMap' => [
-        'index' => 'list',
-        'show' => 'view',
-        'create' => 'create',
-        'store' => 'create',
-        'edit' => 'update',
-        'update' => 'update',
-        'destroy' => 'delete',
+    // controller labels 替换
+    'controller_label_replace' => [
+//        \App\Http\Controllers\Backend\UserController::class => '用户',
     ],
 
-    // 需要生成权限节点的控制器
-    'needGeneratePermission' => [
-//        \App\Http\Controllers\RoleController::class => '角色管理',
+    // 指定路径前缀
+    'path' => [
+        'backend/users',
+        'backend/roles',
+        'backend/configs',
+        'backend/permissions',
     ],
+
+    // 排除路径
+    'except_path' => [
+        'backend/login',
+        'backend/logout',
+    ]
 ];

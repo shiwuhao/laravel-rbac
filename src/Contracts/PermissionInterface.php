@@ -10,6 +10,7 @@ namespace Shiwuhao\Rbac\Contracts;
 
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * Interface Permission
@@ -22,4 +23,8 @@ interface PermissionInterface
      */
     public function roles(): BelongsToMany;
 
+    /**
+     * @return MorphTo
+     */
+    public function permissible(): MorphTo;
 }

@@ -110,4 +110,5 @@ class ServiceProvider extends BaseServiceProvider
             __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], 'migrations');
     }
+
 }

@@ -4,7 +4,6 @@ namespace Shiwuhao\Rbac\Middleware;
 
 use Closure;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Class PermissionMiddleware
@@ -15,17 +14,14 @@ class PermissionMiddleware
     /**
      * @param $request
      * @param Closure $next
-     * @param $permissions
      * @return mixed
      */
     public function handle($request, Closure $next)
     {
-        
-        $permission = strtolower($request->method()) . ',' . $request->route()->uri();
-//        print_r($permission);
-//        Log::info('me:',$request->user()->hasPermission($permission) );
-        if (Auth::guest() || !$request->user()->hasPermission($permission)) {
-            abort(403);
+
+        $alias = strtolower($request->method()) . ',' . $request->route()->uri();
+        if (Auth::guest() || !$request->user()->hasPermission($alias)) {
+            abort(403, 'forbidden');
         }
 
         return $next($request);

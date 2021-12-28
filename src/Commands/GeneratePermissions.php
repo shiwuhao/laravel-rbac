@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: shiwuhao
- * Date: 2019/3/19
- * Time: 10:05 PM
- */
 
 namespace Shiwuhao\Rbac\Commands;
 
@@ -12,8 +6,6 @@ namespace Shiwuhao\Rbac\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Str;
-use Shiwuhao\Rbac\Models\Action;
-use Shiwuhao\Rbac\Models\Permission;
 
 
 /**
@@ -26,9 +18,7 @@ class GeneratePermissions extends Command
     /**
      * @var string
      */
-    protected $signature = 'rbac:generate-permissions
-                            {--name= : Filter the routes by name}
-                            {--method= : Filter the routes by method}
+    protected $signature = 'rbac:auto-generate-actions
                             {--except-path= : Do not display the routes matching the given path pattern}
                             {--path= : Only show routes matching the given path pattern}';
 
@@ -43,6 +33,11 @@ class GeneratePermissions extends Command
     protected $router;
 
     /**
+     * @var
+     */
+    protected $config;
+
+    /**
      * GeneratePermissions constructor.
      * @param Router $router
      */
@@ -51,72 +46,75 @@ class GeneratePermissions extends Command
         parent::__construct();
 
         $this->router = $router;
+        $this->config = config('rbac');
     }
 
     /**
-     *
+     * handle
      */
     public function handle()
     {
-        $this->createPermissions();
-//        $this->createTreePermissions();
+        $this->createActions();
 
         $this->info("Creation Successful");
     }
 
-    protected function createPermissions()
+    /**
+     *  批量创建Action权限节点
+     */
+    protected function createActions()
     {
         $routes = $this->getRoutes();
 
         foreach ($routes as $route) {
-
-            $title = Str::afterLast($route['action'], '\\');
-            $condition = ['url' => $route['uri'], 'method' => strtolower($route['method'])];
-            Action::updateOrCreate($condition, array_merge($condition, [
-                'name' => Str::replace('Controller@', ':', $title),
-                'title' => Str::afterLast($route['action'], '\\'),
-            ]));
+            $this->actionUpdateOrCreate($route);
         }
     }
 
-    protected function createTreePermissions()
+    /**
+     * action create
+     * @param $route
+     */
+    protected function actionUpdateOrCreate($route)
     {
-        $routes = $this->getRoutes();
-        $groupRoutes = $this->getGroupRoutes($routes);
-
-        foreach ($groupRoutes as $key => $children) {
-            $name = Str::afterLast($key, '\\');
-            $condition = ['action' => $key, 'type' => 'menu'];
-            $data = array_merge($condition, ['name' => $name, 'title' => $name]);
-            $parent = Permission::firstOrCreate($condition, $data);
-            foreach ($children as $route) {
-                $title = Str::afterLast($route['action'], '\\');
-                $url = strtolower($route['method']) . ',' . $route['uri'];
-                $condition = ['action' => $route['action'], 'type' => 'action'];
-
-                $data = array_merge($condition, [
-                    'pid' => $parent->id,
-                    'name' => Str::lower(Str::replace('Controller@', ':', $title)),
-                    'url' => $url,
-                    'title' => Str::afterLast($route['action'], '\\'),
-                ]);
-                Permission::firstOrCreate($condition, $data);
-            }
-        }
+        $condition = ['uri' => $route['uri'], 'method' => strtolower($route['method'])];
+        $actionModel = app($this->config['model']['action']);
+        $actionModel = $actionModel->updateOrCreate($condition, array_merge($condition, [
+            'name' => $this->getActionName($route['action']),
+            'label' => $this->getActionLabel($route['action']),
+        ]));
+        $this->info($actionModel->method . ',' . $actionModel->uri);
     }
 
-    protected function getGroupRoutes($routes)
+    /**
+     * action label
+     * @param $action
+     * @return string
+     */
+    protected function getActionLabel($action): string
     {
-        return collect($routes)->mapToGroups(function ($item) {
-            return [Str::before($item['action'], '@') => $item];
-        })->toArray();
+        list($controller, $action) = explode('@', $action);
+        $controllerLabel = $this->config['controller_label_replace'][$controller] ?? $controller . '@';
+        $actionLabel = $this->config['action_label_replace'][$action] ?? $action;
+        return $controllerLabel . $actionLabel;
+    }
+
+    /**
+     * action name
+     * @param $action
+     * @return string
+     */
+    protected function getActionName($action): string
+    {
+        $name = Str::replace('Controller@', ':', Str::afterLast($action, '\\'));
+        return Str::snake($name, '-');
     }
 
     /**
      * 获取路由
      * @return array
      */
-    protected function getRoutes()
+    protected function getRoutes(): array
     {
         return collect($this->router->getRoutes())->map(function ($route) {
             return $this->filterRoute([
@@ -127,6 +125,18 @@ class GeneratePermissions extends Command
                 'action' => ltrim($route->getActionName(), '\\'),
             ]);
         })->filter()->all();
+    }
+
+    /**
+     * 获取分组路由
+     * @param $routes
+     * @return array
+     */
+    protected function getGroupRoutes($routes): array
+    {
+        return collect($routes)->mapToGroups(function ($item) {
+            return [Str::before($item['action'], '@') => $item];
+        })->toArray();
     }
 
     /**
@@ -153,7 +163,6 @@ class GeneratePermissions extends Command
         if ($paths) {
             foreach ($paths as $path) {
                 if (Str::contains($route['uri'], $path)) {
-                    dump($route['uri'] . '|--|' . $path);
                     return $route;
                 }
             }

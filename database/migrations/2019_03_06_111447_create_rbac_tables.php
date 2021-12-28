@@ -30,43 +30,24 @@ class CreateRbacTables extends Migration
             $table->unique('name');
         });
 
-        // 菜单表
-        Schema::create($tableName['menus'], function (Blueprint $table) {
-            $table->id('id');
-            $table->unsignedBigInteger('pid')->default(0);
-            $table->string('name', 50)->default('')->comment('唯一标识');
-            $table->string('label')->default('')->comment('显示名称');
-            $table->string('icon', 50)->default('')->comment('图标');
-            $table->string('url')->default('')->comment('页面url');
-            $table->string('remark')->default('')->comment('备注');
-            $table->timestamps();
-
-            $table->unique('name');
-        });
-
         // 操作表
-        Schema::create($tableName['action'], function (Blueprint $table) {
+        Schema::create($tableName['actions'], function (Blueprint $table) {
             $table->id('id');
             $table->string('name', 50)->default('')->comment('唯一标识');
             $table->string('label')->default('')->comment('显示名称');
-            $table->string('method')->default('GET')->comment('请求方式');
-            $table->string('url')->default('')->comment('请求路径');
+            $table->string('method')->default('')->comment('请求方式');
+            $table->string('uri')->default('')->comment('请求路径');
             $table->timestamps();
 
-            $table->unique('name');
-            $table->unique(['method', 'url']);
+            $table->unique(['method', 'uri']);
         });
 
         // 权限表
         Schema::create($tableName['permissions'], function (Blueprint $table) {
             $table->id('id');
             $table->unsignedBigInteger('pid')->default(0)->comment('父级ID');
-            $table->string('name')->default('')->comment('唯一标识');
-            $table->string('title')->default('')->comment('显示名称');
             $table->morphs('permissible');
             $table->timestamps();
-
-            $table->unique('name');
         });
 
         // 角色对应用户
@@ -98,7 +79,6 @@ class CreateRbacTables extends Migration
         $tableName = config('rbac.table');
 
         Schema::drop($tableName['roles']);
-        Schema::drop($tableName['menus']);
         Schema::drop($tableName['actions']);
         Schema::drop($tableName['permissions']);
         Schema::drop($tableName['role_user']);

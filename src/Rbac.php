@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: shiwuhao
- * Date: 2019/3/15
- * Time: 3:09 PM
- */
 
 namespace Shiwuhao\Rbac;
 
