@@ -45,7 +45,6 @@ return [
     'path' => [
         'backend/users',
         'backend/roles',
-        'backend/configs',
         'backend/permissions',
     ],
 
