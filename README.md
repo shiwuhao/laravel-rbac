@@ -22,7 +22,7 @@ php artisan vendor:publish
 config/rbac.php<br>
 database/rbac_table.php<br>
 
-### 数据迁移
+#### 数据迁移
 
 ```shell
 php artisan migrate
@@ -37,7 +37,7 @@ role_permission -- 角色和权限之间的多对多关系表<br/>
 
 ## 模型
 
-### Role
+#### Role
 
 创建角色模型 app/Models/Role.php
 
@@ -52,7 +52,7 @@ class Role extends \Shiwuhao\Rbac\Models\Role
 }
 ```
 
-### Permission
+#### Permission
 
 创建权限模型 app/Models/Permission.php
 
@@ -67,7 +67,7 @@ class Permission extends \Shiwuhao\Rbac\Models\Permission
 }
 ```
 
-### Action
+#### Action
 
 创建操作模型 app/Models/Action.php
 
@@ -82,9 +82,9 @@ class Action extends \Shiwuhao\Rbac\Models\Action
 }
 ```
 
-### User
+#### User
 
-###### 用户模型中 添加 UserTrait
+<p>用户模型中 添加 UserTrait</p>
 
 ```php
 <?php
@@ -106,7 +106,7 @@ class User extends Authenticatable
 
 Action和Permission为一对一多态模型，创建Action节点会自动同步到Permission模型
 
-###### 创建一个Action节点
+#### 创建一个Action节点
 
 ```php
 $action = new App\Models\Action();
@@ -117,17 +117,17 @@ $action->uri= 'backend/users';
 $action->save();
 ```
 
-###### 批量生成Action节点
+#### 批量生成Action节点
 
-基于当前路由批量生成Action权限节点，可在config/rbac.php配置文件中通过path，except_path指定路径
+<p>基于当前路由批量生成Action权限节点，可在config/rbac.php配置文件中通过path，except_path指定路径</p>
 
 ```shell
 php artisan rbac:auto-generate-actions
 ```
 
-## Role 角色
+### Role 角色
 
-###### 创建一个角色
+#### 创建一个角色
 
 ```php
 $role = new App\Models\Role();
@@ -137,7 +137,7 @@ $role->remark= '备注';
 $role->save();
 ```
 
-###### 给角色绑定权限和用户
+#### 给角色绑定权限和用户
 
 ```php
 $role = App\Models\Role::find(1);
@@ -153,16 +153,16 @@ $role->users()->attach(5);// 附加
 $role->users()->detach(5);// 分离
 ```
 
-## User 用户
+### User 用户
 
-###### 获取用户角色
+#### 获取用户角色
 
 ```php
 $user = App\Models\User::find(1);
 $user->roles;
 ```
 
-###### 给用户绑定角色
+#### 给用户绑定角色
 
 ```php
 $user->roles()->sync([1, 2, 3, 4]);// 同步
@@ -179,7 +179,7 @@ $user->getPermissions();// 去重后的权限节点列表集合
 $user->getPermissionAlias();// 去重后的权限节点别名集合
 ```
 
-返回数据为Collection集合，转数组可直接使用->toArray()
+<p>返回数据为Collection集合，转数组可直接使用->toArray()</p>
 
 ## Contributing
 
