@@ -20,7 +20,7 @@ php artisan vendor:publish
 
 会生成以下两个文件<br>
 config/rbac.php<br>
-database/rbac_table.php<br>
+database/create_rbac_tables.php<br>
 
 #### 数据迁移
 
@@ -148,7 +148,7 @@ $role->permissions()->attach(5);// 附加
 $role->permissions()->detach(2);// 分离
 
 // 绑定用户
-$role->users()->sync([1, 2, 3, 4]);// 同步关联
+$role->users()->sync([1, 2, 3, 4]);// 同步
 $role->users()->attach(5);// 附加
 $role->users()->detach(5);// 分离
 ```
@@ -180,6 +180,34 @@ $user->getPermissionAlias();// 去重后的权限节点别名集合
 ```
 
 <p>返回数据为Collection集合，转数组可直接使用->toArray()</p>
+
+## 鉴权
+
+```php
+$user->hasPermission($alias);
+$user->hasPermission('get,backend/users');
+$user->hasPermission('user:index');
+```
+
+## Middleware
+
+laravel-rbac提供了开箱即用的middleware,在app/Http/Kernel.php文件中添加路由中间件
+
+```php
+protected $routeMiddleware = [
+    'permission' => Shiwuhao\Rbac\Middleware\PermissionMiddleware,
+];
+```
+
+添加后即可在路由中使用
+
+```php
+Route::middleware(['auth:api','permission'])->group(function () {
+    Route::prefix('backend')->group(function () {
+        Route::get('users', [UserController::class, 'index']);
+    })
+});
+```
 
 ## Contributing
 
