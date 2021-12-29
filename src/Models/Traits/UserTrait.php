@@ -35,43 +35,12 @@ trait UserTrait
     }
 
     /**
-     * 用户和角色的多对多关系 with permissions.permissible
-     * @return BelongsToMany
-     */
-    public function roleWithPermissions(): BelongsToMany
-    {
-        return $this->roles()->with('permissions.permissible');
-    }
-
-    /**
      * 权限节点集合
      * @return Collection
      */
-    public function getPermissions(): Collection
+    public function permissions(): Collection
     {
-        return $this->roleWithPermissions()->get()->pluck('permissions')->collapse()->unique('id')->values();
-    }
-
-    /**
-     * 权限节点别名集合
-     * 多态模型中应该追加alias访问器
-     * @return Collection
-     */
-    public function getPermissionAlias(): Collection
-    {
-        return $this->getPermissions()->pluck('permissible')->pluck('alias')->values();
-    }
-
-    /**
-     * 通过别名校验权限
-     * @param $alias
-     * @return bool
-     */
-    public function hasPermission($alias): bool
-    {
-        if ($this->isAdministrator()) return true;
-
-        return $this->getPermissionAlias()->some($alias);
+        return $this->roles()->with('permissions.permissible')->get()->pluck('permissions')->collapse()->unique('id')->values();
     }
 
     /**
@@ -82,5 +51,44 @@ trait UserTrait
     public function hasRole($roleName): bool
     {
         return $this->roles()->pluck('name')->some($roleName);
+    }
+
+    /**
+     * 鉴权
+     * @param $permissionName
+     * @param string $type
+     * @return bool
+     */
+    public function hasPermission($permissionName, string $type = 'name'): bool
+    {
+        if ($type == 'alias') {
+            return $this->hasPermissionAlias($permissionName);
+        }
+
+        return $this->hasPermissionName($permissionName);
+    }
+
+    /**
+     * 通过别名鉴权
+     * @param $permissionAlias
+     * @return bool
+     */
+    public function hasPermissionAlias($permissionAlias): bool
+    {
+        if ($this->isAdministrator()) return true;
+
+        return $this->permissions()->pluck('permissible')->pluck('alias')->some($permissionAlias);
+    }
+
+    /**
+     * 通过name标识鉴权
+     * @param $permissionName
+     * @return bool
+     */
+    public function hasPermissionName($permissionName): bool
+    {
+        if ($this->isAdministrator()) return true;
+
+        return $this->permissions()->pluck('permissible')->pluck('name')->some($permissionName);
     }
 }

@@ -14,13 +14,14 @@ class PermissionMiddleware
     /**
      * @param $request
      * @param Closure $next
+     * @param null $name
      * @return mixed
      */
-    public function handle($request, Closure $next)
+    public function handle($request, Closure $next, $name = null)
     {
-
-        $alias = strtolower($request->method()) . ',' . $request->route()->uri();
-        if (Auth::guest() || !$request->user()->hasPermission($alias)) {
+        $type = !empty($name) ? 'name' : 'alias';
+        $name = !empty($name) ? $name : strtolower($request->method()) . ',' . $request->route()->uri();
+        if (Auth::guest() || !$request->user()->hasPermission($name, $type)) {
             abort(403, 'forbidden');
         }
 

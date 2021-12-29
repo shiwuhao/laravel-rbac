@@ -173,10 +173,7 @@ $user->roles()->detach(5);// 分离
 #### 获取用户拥有的权限节点
 
 ```php
-$user->roleWithPermissions;// 角色和节点
-$user->roleWithPermissions()->get();// 同上
-$user->getPermissions();// 去重后的权限节点列表集合
-$user->getPermissionAlias();// 去重后的权限节点别名集合
+$user->permissions;
 ```
 
 <p>返回数据为Collection集合，转数组可直接使用->toArray()</p>
@@ -184,14 +181,14 @@ $user->getPermissionAlias();// 去重后的权限节点别名集合
 ## 鉴权
 
 ```php
-$user->hasPermission($alias);
-$user->hasPermission('get,backend/users');
-$user->hasPermission('user:index');
+$user->hasPermission($alias, $type = 'alias');
+$user->hasPermissionAlias('get,backend/users');// action权限节点默认使用别名鉴权
+$user->hasPermissionName('user:index');
 ```
 
 ## Middleware
 
-laravel-rbac提供了开箱即用的middleware,在app/Http/Kernel.php文件中添加路由中间件
+在app/Http/Kernel.php文件中添加路由中间件
 
 ```php
 protected $routeMiddleware = [
@@ -202,10 +199,10 @@ protected $routeMiddleware = [
 添加后即可在路由中使用
 
 ```php
-Route::middleware(['auth:api','permission'])->group(function () {
+Route::middleware('permission')->group(function () {
     Route::prefix('backend')->group(function () {
         Route::get('users', [UserController::class, 'index']);
-    })
+    });
 });
 ```
 
