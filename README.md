@@ -39,7 +39,7 @@ role_permission -- 角色和权限之间的多对多关系表<br/>
 
 #### Role
 
-创建角色模型 app/Models/Role.php
+创建角色模型 app/Models/Role.php，继承\Shiwuhao\Rbac\Models\Role
 
 ```php
 <?php
@@ -54,7 +54,7 @@ class Role extends \Shiwuhao\Rbac\Models\Role
 
 #### Permission
 
-创建权限模型 app/Models/Permission.php
+创建权限模型 app/Models/Permission.php，继承\Shiwuhao\Rbac\Models\Permission
 
 ```php
 <?php
@@ -69,7 +69,7 @@ class Permission extends \Shiwuhao\Rbac\Models\Permission
 
 #### Action
 
-创建操作模型 app/Models/Action.php
+创建操作模型 app/Models/Action.php，继承\Shiwuhao\Rbac\Models\Action
 
 ```php
 <?php
@@ -84,7 +84,7 @@ class Action extends \Shiwuhao\Rbac\Models\Action
 
 #### User
 
-<p>用户模型中 添加 UserTrait</p>
+用户模型中 添加 UserTrait
 
 ```php
 <?php
