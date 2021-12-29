@@ -4,7 +4,7 @@
 
 ## 安装方法
 
-使用composer快速安装扩展包
+#### 使用composer快速安装扩展包
 
 ```shell
 $ composer require shiwuhao/laravel-rbac -vvv
@@ -12,7 +12,7 @@ $ composer require shiwuhao/laravel-rbac -vvv
 
 ## 配置信息
 
-### 发布配置文件
+#### 发布配置文件
 
 ```shell
 php artisan vendor:publish
@@ -170,7 +170,7 @@ $user->roles()->attach(5);// 附加
 $user->roles()->detach(5);// 分离
 ```
 
-###### 获取用户拥有的权限节点
+##### 获取用户拥有的权限节点
 
 ```php
 $user->roleWithPermissions;// 角色和节点
