@@ -38,7 +38,7 @@ trait UserTrait
      * 用户和角色的多对多关系 with permissions.permissible
      * @return BelongsToMany
      */
-    public function permissions(): BelongsToMany
+    public function roleWithPermissions(): BelongsToMany
     {
         return $this->roles()->with('permissions.permissible');
     }
@@ -49,7 +49,7 @@ trait UserTrait
      */
     public function getPermissions(): Collection
     {
-        return $this->permissions()->get()->pluck('permissions')->collapse()->unique('id')->values();
+        return $this->roleWithPermissions()->get()->pluck('permissions')->collapse()->unique('id')->values();
     }
 
     /**

@@ -4,7 +4,7 @@ return [
 
     // 模型
     'model' => [
-        'user' => 'App\User',
+        'user' => 'App\Models\User',
         'role' => \Shiwuhao\Rbac\Models\Role::class,
         'action' => \Shiwuhao\Rbac\Models\Action::class,
         'permission' => \Shiwuhao\Rbac\Models\Permission::class,
