@@ -5,6 +5,7 @@ namespace Shiwuhao\Rbac\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Shiwuhao\Rbac\Contracts\RoleInterface;
 
 /**
@@ -13,6 +14,7 @@ use Shiwuhao\Rbac\Contracts\RoleInterface;
  */
 class Role extends Model implements RoleInterface
 {
+    use SoftDeletes;
 
     /**
      * Role constructor.

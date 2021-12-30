@@ -8,16 +8,10 @@
             "email": "admin@shiwuhao.com"
         }
     ],
-    "require": {
-        "illuminate/console": ">5.5",
-        "illuminate/routing": ">5.5",
-        "illuminate/support": ">5.5",
-        "illuminate/database": ">5.5",
-        "illuminate/foundation": ">5.5"
-    },
     "autoload": {
         "psr-4": {
-            "Shiwuhao\\Rbac\\": "src"
+            "Shiwuhao\\Rbac\\": "src",
+            "Tests\\": "tests"
         }
     },
     "extra": {
@@ -29,5 +23,8 @@
                 "Rbac": "Shiwuhao\\Rbac\\Rbac"
             }
         }
+    },
+    "require-dev": {
+        "orchestra/testbench": "^6.0"
     }
 }
