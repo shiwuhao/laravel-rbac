@@ -1,6 +1,12 @@
 <h1 align="center"> laravel-rbac </h1>
 
-<p align="center"> A laravel package.</p>
+<p> laravel-rbac是一个基于Laravel框架的扩展包。<br/>该扩展包为Laravel框架提供了RBAC模型的实现，并且支持模型授权，比如对菜单，分类等模型的授权。</p>
+
+## 版本信息
+
+Rbac  | Laravel | PHP
+:------|:--------|:--------
+1.0.1.beta-1 | > 7.x   | > =7.x
 
 ## 安装方法
 
