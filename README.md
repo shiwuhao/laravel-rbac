@@ -108,6 +108,25 @@ class User extends Authenticatable
 
 ```
 
+#### 扩展其他模型授权，比如菜单 Menu
+
+创建菜单模型 app/Models/Menu.php，使用 Shiwuhao\Rbac\Models\Traits\PermissibleTrait。
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Shiwuhao\Rbac\Models\Traits\PermissibleTrait;
+
+class Menu extends Model
+{
+    use PermissibleTrait;
+}
+
+```
+
 ## 使用
 
 ### Action 权限节点
