@@ -1,6 +1,8 @@
 <h1 align="center"> laravel-rbac </h1>
 
-<p> laravel-rbac是一个基于Laravel框架的扩展包。<br/>该扩展包为Laravel框架提供了RBAC模型的实现，并且支持模型授权，比如对菜单，分类等模型的授权。</p>
+<p> laravel-rbac是一个基于Laravel框架的扩展包。</p>
+<p>该扩展包为Laravel框架提供了RBAC模型的实现，并且支持模型授权，比如对菜单，分类等模型的授权。</p>
+<p>Permission模型为一对一多态模型，默认提供Action模型的授权管理，并根据路由文件自动生成Action模型的权限节点。</p>
 
 ## 版本信息
 
