@@ -19,7 +19,7 @@ use Shiwuhao\Rbac\Contracts\RoleInterface;
  * Class RbacServiceProvider
  * @package Shiwuhao\Rbac
  */
-class ServiceProvider extends BaseServiceProvider
+class RbacServiceProvider extends BaseServiceProvider
 {
     /**
      * Boot the service provider.
