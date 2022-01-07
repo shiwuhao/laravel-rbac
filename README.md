@@ -1,6 +1,5 @@
 <h1 align="center"> laravel-rbac </h1>
 
-[![Build Status](https://app.travis-ci.com/shiwuhao/laravel-rbac.svg?branch=develop)](https://app.travis-ci.com/shiwuhao/laravel-rbac)
 
 <p> laravel-rbac是一个基于Laravel框架的扩展包。</p>
 <p>该扩展包为Laravel框架提供了RBAC模型的实现，并且支持模型授权，比如对菜单，分类等模型的授权。</p>
