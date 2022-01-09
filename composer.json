@@ -21,7 +21,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "RbacServiceProvider"
+                "Shiwuhao\\Rbac\\RbacServiceProvider"
             ],
             "aliases": {
                 "Rbac": "Shiwuhao\\Rbac\\Rbac"
