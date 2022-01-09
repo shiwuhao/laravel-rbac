@@ -23,14 +23,14 @@ trait PermissibleTrait
      */
     protected static function booted()
     {
-        self::created(function ($action) {
-            $action->permission()->save(new Permission());
+        self::created(function ($model) {
+            $model->permission()->save(new Permission());
         });
-        self::updated(function ($action) {
-            $action->permission->fill($action->toArray())->save();
+        self::updated(function ($model) {
+            $model->permission()->fill($model->toArray())->save();
         });
-        self::deleted(function ($action) {
-            $action->permission->delete();
+        self::deleted(function ($model) {
+            $model->permission->delete();
         });
     }
 

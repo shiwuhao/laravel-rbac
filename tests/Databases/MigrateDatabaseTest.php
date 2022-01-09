@@ -40,7 +40,7 @@ class MigrateDatabaseTest extends TestCase
             'id',
             'name',
             'label',
-            'remark',
+            'desc',
             'deleted_at',
             'created_at',
             'updated_at',

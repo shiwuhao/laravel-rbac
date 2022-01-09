@@ -24,7 +24,7 @@ class CreateRbacTables extends Migration
             $table->id('id');
             $table->string('name')->comment('唯一标识');
             $table->string('label')->default('显示名称');
-            $table->string('remark')->default('备注');
+            $table->string('desc')->default('描述');
             $table->softDeletes();
             $table->timestamps();
 
