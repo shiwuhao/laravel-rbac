@@ -10,14 +10,13 @@ use Illuminate\Support\Collection;
  */
 trait UserTrait
 {
-
     /**
-     * 校验管理员
+     * 验证管理员
      * @return bool
      */
     public function isAdministrator(): bool
     {
-        return true;
+        return $this->id === 1;
     }
 
     /**
