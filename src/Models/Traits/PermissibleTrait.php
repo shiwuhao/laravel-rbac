@@ -23,13 +23,13 @@ trait PermissibleTrait
      */
     protected static function booted()
     {
-        self::created(function ($model) {
+        self::created(function ( $model) {
             $model->permission()->save(new Permission());
         });
-        self::updated(function ($model) {
+        self::updated(function ( $model) {
             $model->permission()->fill($model->toArray())->save();
         });
-        self::deleted(function ($model) {
+        self::deleted(function ( $model) {
             $model->permission->delete();
         });
     }
@@ -41,5 +41,14 @@ trait PermissibleTrait
     public function permission(): MorphOne
     {
         return $this->morphOne(Permission::class, 'permissible');
+    }
+
+    /**
+     * alias
+     * @return string
+     */
+    public function getAliasAttribute(): string
+    {
+        return '';
     }
 }
