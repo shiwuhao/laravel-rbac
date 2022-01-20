@@ -48,6 +48,7 @@ class CreateRbacTables extends Migration
             $table->id('id');
             $table->unsignedBigInteger('pid')->default(0)->comment('父级ID');
             $table->morphs('permissible');
+            $table->unsignedBigInteger('sort')->default(0)->comment('排序');
             $table->timestamps();
         });
 
