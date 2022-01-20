@@ -43,14 +43,13 @@ return [
 
     // 指定路径前缀
     'path' => [
-        'backend/users',
-        'backend/roles',
-        'backend/permissions',
+        '/backend/users',
+        '/backend/roles',
+        '/backend/permissions',
     ],
 
     // 排除路径
     'except_path' => [
-        'backend/login',
-        'backend/logout',
+//        '/backend/users/change',
     ]
 ];

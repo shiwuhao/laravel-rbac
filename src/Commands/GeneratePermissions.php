@@ -153,7 +153,7 @@ class GeneratePermissions extends Command
         $exceptPaths = array_merge($this->option('except-path') ? explode(',', $this->option('except-path')) : [], config('rbac.except_path'));
         if ($exceptPaths) {
             foreach ($exceptPaths as $path) {
-                if (Str::contains($route['uri'], $path)) {
+                if (Str::contains($route['uri'], trim($path,'/'))) {
                     return false;
                 }
             }
@@ -162,7 +162,7 @@ class GeneratePermissions extends Command
         $paths = array_merge($this->option('path') ? explode(',', $this->option('path')) : [], config('rbac.path'));
         if ($paths) {
             foreach ($paths as $path) {
-                if (Str::contains($route['uri'], $path)) {
+                if (Str::contains($route['uri'], trim($path,'/'))) {
                     return $route;
                 }
             }

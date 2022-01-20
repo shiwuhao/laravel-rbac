@@ -12,13 +12,6 @@ use Shiwuhao\Rbac\Models\Permission;
 trait PermissibleTrait
 {
     /**
-     * @var string[]
-     */
-    protected $appends = [
-        'alias'
-    ];
-
-    /**
      * booted
      */
     protected static function booted()
@@ -26,9 +19,9 @@ trait PermissibleTrait
         self::created(function ( $model) {
             $model->permission()->save(new Permission());
         });
-        self::updated(function ( $model) {
-            $model->permission()->fill($model->toArray())->save();
-        });
+//        self::updated(function ( $model) {
+//            $model->permission()->save($model);
+//        });
         self::deleted(function ( $model) {
             $model->permission->delete();
         });
