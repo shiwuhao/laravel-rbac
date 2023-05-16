@@ -14,14 +14,14 @@ class PermissionMiddleware
     /**
      * @param $request
      * @param Closure $next
-     * @param null $name
+     * @param null $permissionName
+     * @param string $checkColumn
      * @return mixed
      */
-    public function handle($request, Closure $next, $name = null)
+    public function handle($request, Closure $next, $permissionName = null, string $checkColumn = 'alias'): mixed
     {
-        $type = !empty($name) ? 'name' : 'alias';
-        $name = !empty($name) ? $name : strtolower($request->method()) . ',' . $request->route()->uri();
-        if (Auth::guest() || !$request->user()->hasPermission($name, $type)) {
+        $permissionName = !empty($permissionName) ? $permissionName : strtolower($request->method()) . ',' . $request->route()->uri();
+        if (Auth::guest() || !$request->user()->hasPermission($permissionName, $checkColumn)) {
             abort(403, 'forbidden');
         }
 
