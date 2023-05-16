@@ -2,8 +2,10 @@
 
 namespace Shiwuhao\Rbac\Models\Traits;
 
+use Illuminate\Cache\TaggableStore;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * RBAC UserTrait
@@ -14,7 +16,7 @@ trait UserTrait
      * 验证管理员
      * @return bool
      */
-    public function isAdministrator(): bool
+    public function isSuperAdministrator(): bool
     {
         return $this->id === 1;
     }
@@ -34,6 +36,21 @@ trait UserTrait
     }
 
     /**
+     * 缓存用户角色集合
+     * @return Collection
+     */
+    public function cacheRoles(): Collection
+    {
+        $key = 'rbac_roles_for_user_' . $this->primaryKey;
+        if (Cache::getStore() instanceof TaggableStore) {
+            return Cache::tags(config('rbac.table.roles'))->remember($key, config('rbac.ttl'), function () {
+                return $this->roles()->get();
+            });
+        }
+        return $this->roles()->get();
+    }
+
+    /**
      * 权限节点集合
      * @return Collection
      */
@@ -43,51 +60,68 @@ trait UserTrait
     }
 
     /**
-     * 通过角色表示校验权限
-     * @param $roleName
-     * @return bool
+     * 缓存用户权限节点集合
+     * @return Collection
      */
-    public function hasRole($roleName): bool
+    public function cachePermissions(): Collection
     {
-        return $this->roles()->pluck('name')->some($roleName);
-    }
-
-    /**
-     * 鉴权
-     * @param $permissionName
-     * @param string $type
-     * @return bool
-     */
-    public function hasPermission($permissionName, string $type = 'name'): bool
-    {
-        if ($type == 'alias') {
-            return $this->hasPermissionAlias($permissionName);
+        $key = 'rbac_permissions_for_user_' . $this->primaryKey;
+        if (Cache::getStore() instanceof TaggableStore) {
+            return Cache::tags(config('rbac.table.permissions'))->remember($key, config('rbac.ttl'), function () {
+                return $this->permissions();
+            });
         }
-
-        return $this->hasPermissionName($permissionName);
+        return $this->permissions();
     }
 
     /**
-     * 通过别名鉴权
-     * @param $permissionAlias
+     * 通过角色标识校验权限
+     * @param string|array $roleNames
+     * @param bool $and
      * @return bool
      */
-    public function hasPermissionAlias($permissionAlias): bool
+    public function hasRole(string|array $roleNames, bool $and = false): bool
     {
-        if ($this->isAdministrator()) return true;
+        if ($this->isSuperAdministrator()) return true;
 
-        return $this->permissions()->pluck('permissible')->pluck('alias')->some($permissionAlias);
+        $roleNames = is_string($roleNames) ? explode(',', $roleNames) : $roleNames;
+        foreach ($roleNames as $roleName) {
+            $check = $this->cacheRoles()->pluck('name')->some($roleName);
+            if (!$and && $check) return true;
+            if ($and && !$check) return false;
+        }
+        return $and;
     }
 
     /**
-     * 通过name标识鉴权
-     * @param $permissionName
+     * 通过权限节点标识校验权限
+     * @param string|array $permissionNames
+     * @param string $checkColumn
+     * @param bool $and
      * @return bool
      */
-    public function hasPermissionName($permissionName): bool
+    public function hasPermission(string|array $permissionNames, string $checkColumn = 'name', bool $and = false): bool
     {
-        if ($this->isAdministrator()) return true;
+        if ($this->isSuperAdministrator()) return true;
 
-        return $this->permissions()->pluck('permissible')->pluck('name')->some($permissionName);
+        $permissionNames = is_string($permissionNames) ? explode(',', $permissionNames) : $permissionNames;
+        foreach ($permissionNames as $permissionName) {
+            $check = $this->cachePermissions()->pluck('permissible')->pluck($checkColumn)->some($permissionName);
+            if (!$and && $check) return true;
+            if ($and && !$check) return false;
+        }
+        return $and;
+    }
+
+    /**
+     * 清除缓存
+     * @return bool
+     */
+    public function clearPermissionCache(): bool
+    {
+        if (Cache::getStore() instanceof TaggableStore) {
+            return Cache::tags([config('rbac.table.roles'), config('rbac.table.permissions')])->flush();
+        }
+        return false;
     }
 }

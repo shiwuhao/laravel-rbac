@@ -1,6 +1,8 @@
 <?php
 
 return [
+    // 缓存时间
+    'ttl' => 0,
 
     // 模型
     'model' => [
