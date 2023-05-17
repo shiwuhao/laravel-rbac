@@ -16,14 +16,11 @@ trait PermissibleTrait
      */
     protected static function booted()
     {
-        self::created(function ( $model) {
-            $model->permission()->save(new Permission());
+        self::saved(function ($model) {
+            $model->permission ? $model->permission->save() : $model->permission()->create();
         });
-//        self::updated(function ( $model) {
-//            $model->permission()->save($model);
-//        });
-        self::deleted(function ( $model) {
-            $model->permission->delete();
+        self::deleted(function ($model) {
+            $model->permission && $model->permission->delete();
         });
     }
 

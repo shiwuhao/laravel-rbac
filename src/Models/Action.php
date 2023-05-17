@@ -35,7 +35,7 @@ class Action extends Model implements PermissibleInterface
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->setTable(config('rbac.table.action'));
+        $this->setTable(config('rbac.table.actions'));
     }
 
     /**

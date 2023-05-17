@@ -9,7 +9,7 @@ return [
         'user' => 'App\Models\User',
         'role' => 'App\Models\Role',
         'action' => 'App\Models\Action',
-        'permission' => 'App\Models\permission',
+        'permission' => 'App\Models\Permission',
     ],
 
     // 表名称
