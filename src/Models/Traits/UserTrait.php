@@ -16,7 +16,7 @@ trait UserTrait
      * 验证管理员
      * @return bool
      */
-    public function isSuperAdministrator(): bool
+    public function isAdministrator(): bool
     {
         return $this->id === 1;
     }
@@ -82,8 +82,6 @@ trait UserTrait
      */
     public function hasRole(string|array $roleNames, bool $and = false): bool
     {
-        if ($this->isSuperAdministrator()) return true;
-
         $roleNames = is_string($roleNames) ? explode(',', $roleNames) : $roleNames;
         foreach ($roleNames as $roleName) {
             $check = $this->cacheRoles()->pluck('name')->some($roleName);
@@ -102,7 +100,7 @@ trait UserTrait
      */
     public function hasPermission(string|array $permissionNames, string $checkColumn = 'name', bool $and = false): bool
     {
-        if ($this->isSuperAdministrator()) return true;
+        if ($this->isAdministrator()) return true;
 
         $permissionNames = is_string($permissionNames) ? explode(',', $permissionNames) : $permissionNames;
         foreach ($permissionNames as $permissionName) {
