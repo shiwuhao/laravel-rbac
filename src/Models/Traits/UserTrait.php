@@ -82,7 +82,7 @@ trait UserTrait
      */
     public function hasRole(string|array $roleNames, bool $and = false): bool
     {
-        $roleNames = is_array($roleNames) ? [$roleNames] : $roleNames;
+        $roleNames = is_array($roleNames) ? $roleNames : [$roleNames];
         foreach ($roleNames as $roleName) {
             $check = $this->cacheRoles()->pluck('name')->some($roleName);
             if (!$and && $check) return true;
