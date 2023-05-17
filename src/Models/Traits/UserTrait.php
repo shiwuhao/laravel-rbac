@@ -82,7 +82,7 @@ trait UserTrait
      */
     public function hasRole(string|array $roleNames, bool $and = false): bool
     {
-        $roleNames = is_string($roleNames) ? explode(',', $roleNames) : $roleNames;
+        $roleNames = is_array($roleNames) ? [$roleNames] : $roleNames;
         foreach ($roleNames as $roleName) {
             $check = $this->cacheRoles()->pluck('name')->some($roleName);
             if (!$and && $check) return true;
@@ -102,7 +102,7 @@ trait UserTrait
     {
         if ($this->isAdministrator()) return true;
 
-        $permissionNames = is_string($permissionNames) ? explode(',', $permissionNames) : $permissionNames;
+        $permissionNames = is_array($permissionNames) ? $permissionNames : [$permissionNames];
         foreach ($permissionNames as $permissionName) {
             $check = $this->cachePermissions()->pluck('permissible')->pluck($checkColumn)->some($permissionName);
             if (!$and && $check) return true;
