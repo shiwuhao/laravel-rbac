@@ -9,7 +9,7 @@
 
 Rbac  | Laravel | PHP
 :------|:--------|:--------
-1.0.1.beta-1 | > 7.x   | > =7.x
+1.3.2 | > 8.x   | > =8.x
 
 ## 安装方法
 
@@ -209,9 +209,10 @@ $user->permissions;
 ## 鉴权
 
 ```php
-$user->hasPermission($alias, $type = 'alias');
-$user->hasPermissionAlias('get,backend/users');// action权限节点默认使用别名鉴权
-$user->hasPermissionName('user:index');
+$user->hasRole('admin');
+$user->hasRole(['admin','test'],true);
+$user->hasPermission('user:add');
+$user->hasPermission($names = ['user:add','user:edit'],$checkColumn = 'name',$and = false);
 ```
 
 ## Middleware
