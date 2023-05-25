@@ -41,7 +41,8 @@ trait UserTrait
      */
     public function cacheRoles(): Collection
     {
-        $key = 'rbac_roles_for_user_' . $this->primaryKey;
+        $primaryKey = $this->primaryKey;
+        $key = 'rbac_roles_for_user_' . $this->$primaryKey;
         if (Cache::getStore() instanceof TaggableStore) {
             return Cache::tags(config('rbac.table.roles'))->remember($key, config('rbac.ttl'), function () {
                 return $this->roles()->get();
@@ -65,7 +66,8 @@ trait UserTrait
      */
     public function cachePermissions(): Collection
     {
-        $key = 'rbac_permissions_for_user_' . $this->primaryKey;
+        $primaryKey = $this->primaryKey;
+        $key = 'rbac_permissions_for_user_' . $this->$primaryKey;
         if (Cache::getStore() instanceof TaggableStore) {
             return Cache::tags(config('rbac.table.permissions'))->remember($key, config('rbac.ttl'), function () {
                 return $this->permissions();
@@ -85,8 +87,8 @@ trait UserTrait
         $roleNames = is_array($roleNames) ? $roleNames : [$roleNames];
         foreach ($roleNames as $roleName) {
             $check = $this->cacheRoles()->pluck('name')->some($roleName);
-            if (!$and && $check) return true;
-            if ($and && !$check) return false;
+            if ($check && !$and) return true;
+            if (!$check && $and) return false;
         }
         return $and;
     }
@@ -105,8 +107,8 @@ trait UserTrait
         $permissionNames = is_array($permissionNames) ? $permissionNames : [$permissionNames];
         foreach ($permissionNames as $permissionName) {
             $check = $this->cachePermissions()->pluck('permissible')->pluck($checkColumn)->some($permissionName);
-            if (!$and && $check) return true;
-            if ($and && !$check) return false;
+            if ($check && !$and) return true;
+            if (!$check && $and) return false;
         }
         return $and;
     }
