@@ -18,7 +18,7 @@ class Action extends Model implements PermissibleInterface
      * @var string[]
      */
     protected $fillable = [
-        'name', 'label', 'method', 'uri',
+        'pid', 'action', 'name', 'label', 'method', 'uri',
     ];
 
     /**

@@ -34,13 +34,15 @@ class CreateRbacTables extends Migration
         // 操作表
         Schema::create($tableName['actions'], function (Blueprint $table) {
             $table->id('id');
-            $table->string('name', 50)->default('')->comment('唯一标识');
+            $table->unsignedBigInteger('pid');
+            $table->string('action')->default('')->index();
+            $table->string('name')->default('')->comment('标识');
             $table->string('label')->default('')->comment('显示名称');
             $table->string('method')->default('')->comment('请求方式');
             $table->string('uri')->default('')->comment('请求路径');
             $table->timestamps();
 
-            $table->unique(['method', 'uri']);
+            $table->index(['method', 'uri']);
         });
 
         // 权限表

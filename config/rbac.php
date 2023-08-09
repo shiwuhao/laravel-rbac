@@ -29,18 +29,10 @@ return [
         'permission' => 'permission_id',
     ],
 
-    // action labels 替换
-    'action_label_replace' => [
-        'index' => '列表',
-        'show' => '详情',
-        'store' => '新增',
-        'update' => '更新',
-        'destroy' => '删除',
-    ],
-
-    // controller labels 替换
-    'controller_label_replace' => [
-//        \App\Http\Controllers\Backend\UserController::class => '用户',
+    // 截取短名称前缀
+    'replace_action' => [
+        'search' => ['App\\Http\\Controllers\\', 'Controller@', '\\'],
+        'replace' => ['', ':', ''],
     ],
 
     // 指定路径前缀
@@ -52,6 +44,6 @@ return [
 
     // 排除路径
     'except_path' => [
-//        '/backend/users/change',
+        '/backend/login',
     ]
 ];

@@ -5,6 +5,7 @@ namespace Shiwuhao\Rbac\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 
@@ -30,12 +31,12 @@ class GeneratePermissions extends Command
     /**
      * @var Router
      */
-    protected $router;
+    protected Router $router;
 
     /**
      * @var
      */
-    protected $config;
+    protected mixed $config;
 
     /**
      * GeneratePermissions constructor.
@@ -52,7 +53,7 @@ class GeneratePermissions extends Command
     /**
      * handle
      */
-    public function handle()
+    public function handle(): void
     {
         $this->createActions();
 
@@ -62,59 +63,56 @@ class GeneratePermissions extends Command
     /**
      *  批量创建Action权限节点
      */
-    protected function createActions()
+    protected function createActions(): void
     {
-        $routes = $this->getRoutes();
+        $this->getRoutes()->groupBy(function ($item) {
+            list($controller, $action) = explode('@', $item['action']);
+            return $controller;
+        })->each(function ($group, $key) {
+            $name = $this->replaceNameOnAction($key);
+            $condition = ['action' => $key];
+            $groupModel = app($this->config['model']['action'])->updateOrCreate($condition, array_merge($condition, ['name' => $name, 'label' => $name]));
+            if ($groupModel) {
+                $group->each(function ($route) use ($groupModel) {
+                    $this->actionUpdateOrCreate($route, $groupModel->id);
+                });
+            }
+        });
+    }
 
-        foreach ($routes as $route) {
-            $this->actionUpdateOrCreate($route);
-        }
+    /**
+     * 基于action生成name标识
+     * @param $fullAction
+     * @return string
+     */
+    protected function replaceNameOnAction($fullAction): string
+    {
+        return Str::replace($this->config['replace_action']['search'] ?? [], $this->config['replace_action']['replace'] ?? [], $fullAction);
     }
 
     /**
      * action create
      * @param $route
+     * @param int $pid
      */
-    protected function actionUpdateOrCreate($route)
+    protected function actionUpdateOrCreate($route, int $pid = 0): void
     {
-        $condition = ['uri' => $route['uri'], 'method' => strtolower($route['method'])];
-        $actionModel = app($this->config['model']['action']);
-        $actionModel = $actionModel->updateOrCreate($condition, array_merge($condition, [
-            'name' => $this->getActionName($route['action']),
-            'label' => $this->getActionLabel($route['action']),
+        $name = $this->replaceNameOnAction($route['action']);
+        $condition = ['action' => $route['action']];
+        $actionModel = app($this->config['model']['action'])->updateOrCreate($condition, array_merge($condition, [
+            'pid' => $pid,
+            'uri' => $route['uri'],
+            'method' => strtolower($route['method']),
+            'name' => $name,
+            'label' => $name,
         ]));
         $this->info($actionModel->method . ',' . $actionModel->uri);
     }
 
     /**
-     * action label
-     * @param $action
-     * @return string
+     * @return Collection
      */
-    protected function getActionLabel($action): string
-    {
-        list($controller, $action) = explode('@', $action);
-        $controllerLabel = $this->config['controller_label_replace'][$controller] ?? $controller . '@';
-        $actionLabel = $this->config['action_label_replace'][$action] ?? $action;
-        return $controllerLabel . $actionLabel;
-    }
-
-    /**
-     * action name
-     * @param $action
-     * @return string
-     */
-    protected function getActionName($action): string
-    {
-        $name = Str::replace('Controller@', ':', Str::afterLast($action, '\\'));
-        return Str::snake($name, '-');
-    }
-
-    /**
-     * 获取路由
-     * @return array
-     */
-    protected function getRoutes(): array
+    protected function getRoutes(): Collection
     {
         return collect($this->router->getRoutes())->map(function ($route) {
             return $this->filterRoute([
@@ -124,7 +122,7 @@ class GeneratePermissions extends Command
                 'name' => $route->getName(),
                 'action' => ltrim($route->getActionName(), '\\'),
             ]);
-        })->filter()->all();
+        })->filter();
     }
 
     /**
@@ -153,7 +151,7 @@ class GeneratePermissions extends Command
         $exceptPaths = array_merge($this->option('except-path') ? explode(',', $this->option('except-path')) : [], config('rbac.except_path'));
         if ($exceptPaths) {
             foreach ($exceptPaths as $path) {
-                if (Str::contains($route['uri'], trim($path,'/'))) {
+                if (Str::contains($route['uri'], trim($path, '/'))) {
                     return false;
                 }
             }
@@ -162,7 +160,7 @@ class GeneratePermissions extends Command
         $paths = array_merge($this->option('path') ? explode(',', $this->option('path')) : [], config('rbac.path'));
         if ($paths) {
             foreach ($paths as $path) {
-                if (Str::contains($route['uri'], trim($path,'/'))) {
+                if (Str::contains($route['uri'], trim($path, '/'))) {
                     return $route;
                 }
             }
