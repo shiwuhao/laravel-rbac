@@ -1,110 +1,256 @@
 <?php
+
+namespace Rbac;
+
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Blade;
+use Rbac\Services\RbacService;
+use Rbac\Services\RoutePermissionService;
+use Rbac\Commands\CreateRoleCommand;
+use Rbac\Commands\CreatePermissionCommand;
+use Rbac\Commands\GenerateRoutePermissionsCommand;
+use Rbac\Commands\RbacStatusCommand;
+use Rbac\Commands\ClearCacheCommand;
+use Rbac\Commands\InstallCommand;
+use Rbac\Commands\SeedTestDataCommand;
+use Rbac\Commands\QuickSeedCommand;
+use Rbac\Middleware\PermissionMiddleware;
+use Rbac\Middleware\RoleMiddleware;
+use Rbac\Middleware\DataScopeMiddleware;
+
 /**
- * Created by PhpStorm.
- * User: shiwuhao
- * Date: 2019/3/15
- * Time: 1:52 PM
+ * Laravel RBAC 服务提供者
  */
-
-namespace Shiwuhao\Rbac;
-
-
-use Illuminate\Support\ServiceProvider as BaseServiceProvider;
-use Shiwuhao\Rbac\Commands\CreateRole;
-use Shiwuhao\Rbac\Commands\GeneratePermissions;
-use Shiwuhao\Rbac\Contracts\PermissionInterface;
-use Shiwuhao\Rbac\Contracts\RoleInterface;
-
-/**
- * Class RbacServiceProvider
- * @package Shiwuhao\Rbac
- */
-class RbacServiceProvider extends BaseServiceProvider
+class RbacServiceProvider extends ServiceProvider
 {
     /**
-     * Boot the service provider.
-     *
-     * @return void
+     * 注册服务
      */
-    public function boot()
+    public function register(): void
     {
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        // 合并配置
+        $this->mergeConfigFrom(__DIR__.'/../config/rbac.php', 'rbac');
 
-        $this->publishConfig();
-        $this->publishMigrations();
-    }
+        // 注册核心服务
+        $this->app->singleton(RbacService::class, function ($app) {
+            return new RbacService();
+        });
 
-    /**
-     * Register the service provider.
-     */
-    public function register()
-    {
-        $this->mergeConfigFrom(__DIR__ . '/../config/rbac.php', 'rbac');
-        $this->registerRbacService();
-        $this->registerAlias();
-        $this->registerCommand();
-        $this->registerModelBindings();
-    }
+        $this->app->singleton(RoutePermissionService::class, function ($app) {
+            return new RoutePermissionService($app->make(RbacService::class));
+        });
 
-    /**
-     * 注册 Rbac 服务
-     */
-    protected function registerRbacService()
-    {
-        $this->app->singleton(Rbac::class, function ($app) {
-            return new Rbac($app);
+        // 注册门面
+        $this->app->singleton('rbac', function ($app) {
+            return $app->make(RbacService::class);
         });
     }
 
     /**
-     * register Rbac Alias
+     * 启动服务
      */
-    protected function registerAlias()
+    public function boot(): void
     {
-        $this->app->alias(Rbac::class, 'rbac');
+        // 发布配置文件
+        $this->publishes([
+            __DIR__.'/../config/rbac.php' => config_path('rbac.php'),
+        ], 'rbac-config');
+
+        // 发布迁移文件
+        $this->publishes([
+            __DIR__.'/../database/migrations/' => database_path('migrations'),
+        ], 'rbac-migrations');
+
+        // 发布数据填充文件
+        $this->publishes([
+            __DIR__.'/../database/seeders/' => database_path('seeders'),
+        ], 'rbac-seeders');
+
+        // 发布API路由文件
+        $this->publishes([
+            __DIR__.'/../routes/api.php' => base_path('routes/rbac-api.php'),
+        ], 'rbac-routes');
+
+        // 发布Actions文件（核心业务逻辑）
+        $this->publishes([
+            __DIR__.'/Actions/' => app_path('Actions/Rbac/'),
+        ], 'rbac-actions');
+
+        // 发布控制器文件（可选，推荐使用）
+        $this->publishes([
+            __DIR__.'/Http/Controllers/' => app_path('Http/Controllers/Rbac/'),
+        ], 'rbac-controllers');
+
+        // 加载迁移文件
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+
+        // 加载纯API路由文件
+        if (config('rbac.api.enabled', true)) {
+            $this->loadApiRoutes();
+        }
+
+        // 注册命令
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                CreateRoleCommand::class,
+                CreatePermissionCommand::class,
+                GenerateRoutePermissionsCommand::class,
+                RbacStatusCommand::class,
+                ClearCacheCommand::class,
+                InstallCommand::class,
+                SeedTestDataCommand::class,
+                QuickSeedCommand::class,
+            ]);
+        }
+
+        // 注册中间件
+        $this->registerMiddleware();
+
+        // 注册权限门
+        $this->registerGates();
+
+        // 注册 Blade 指令
+        $this->registerBladeDirectives();
+
+        // 注册模型观察者
+        $this->registerObservers();
+
+        // 注册路由权限生成
+        $this->registerRoutePermissionGeneration();
     }
 
     /**
-     * register command
+     * 加载API路由
      */
-    protected function registerCommand()
+    protected function loadApiRoutes(): void
     {
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                GeneratePermissions::class,
-                CreateRole::class,
-            ]);
+        $config = config('rbac.api', []);
+        
+        \Illuminate\Support\Facades\Route::middleware($config['middleware'] ?? ['api', 'auth:sanctum'])
+            ->prefix($config['prefix'] ?? 'api/rbac')
+            ->name($config['name_prefix'] ?? 'rbac.api.')
+            ->group(__DIR__.'/../routes/api.php');
+    }
+
+    /**
+     * 注册中间件
+     */
+    protected function registerMiddleware(): void
+    {
+        $router = $this->app['router'];
+
+        $router->aliasMiddleware('permission', PermissionMiddleware::class);
+        $router->aliasMiddleware('role', RoleMiddleware::class);
+        $router->aliasMiddleware('data-scope', DataScopeMiddleware::class);
+    }
+
+    /**
+     * 注册权限门
+     */
+    protected function registerGates(): void
+    {
+        Gate::before(function ($user, $ability) {
+            // 超级管理员拥有所有权限
+            if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
+                return true;
+            }
+
+            // 检查用户是否具有该权限
+            if (method_exists($user, 'hasPermission')) {
+                return $user->hasPermission($ability) ?: null;
+            }
+
+            return null;
+        });
+    }
+
+    /**
+     * 注册 Blade 指令
+     */
+    protected function registerBladeDirectives(): void
+    {
+        // @permission('permission.slug')
+        Blade::if('permission', function ($permission) {
+            $user = auth()->user();
+            return $user && $user->hasPermission($permission);
+        });
+
+        // @role('role.slug')
+        Blade::if('role', function ($role) {
+            $user = auth()->user();
+            return $user && $user->hasRole($role);
+        });
+
+        // @anypermission('perm1', 'perm2')
+        Blade::if('anypermission', function (...$permissions) {
+            $user = auth()->user();
+            return $user && $user->hasAnyPermission($permissions);
+        });
+
+        // @allpermissions('perm1', 'perm2')
+        Blade::if('allpermissions', function (...$permissions) {
+            $user = auth()->user();
+            return $user && $user->hasAllPermissions($permissions);
+        });
+
+        // @anyrole('role1', 'role2')
+        Blade::if('anyrole', function (...$roles) {
+            $user = auth()->user();
+            return $user && $user->hasAnyRole($roles);
+        });
+
+        // @allroles('role1', 'role2')
+        Blade::if('allroles', function (...$roles) {
+            $user = auth()->user();
+            return $user && $user->hasAllRoles($roles);
+        });
+    }
+
+    /**
+     * 注册模型观察者
+     */
+    protected function registerObservers(): void
+    {
+        // 如果启用了自动权限同步
+        if (config('rbac.auto_sync_permissions', false)) {
+            // 这里可以注册默认的观察者
+            // 具体的观察者需要在应用中手动注册
         }
     }
 
     /**
-     * register model bindings
+     * 注册路由权限生成
      */
-    protected function registerModelBindings()
+    protected function registerRoutePermissionGeneration(): void
     {
-        $config = config('rbac.model');
-        $this->app->bind(RoleInterface::class, $config['role']);
-        $this->app->bind(PermissionInterface::class, $config['permission']);
+        if (config('rbac.route_permission.auto_generate', false)) {
+            // 在应用启动后自动生成路由权限
+            $this->app->booted(function () {
+                if (!$this->app->runningInConsole() || $this->app->runningUnitTests()) {
+                    return;
+                }
+
+                try {
+                    $routePermissionService = $this->app->make(RoutePermissionService::class);
+                    $routePermissionService->generateAllRoutePermissions();
+                } catch (\Exception $e) {
+                    // 静默处理，避免影响应用启动
+                    logger()->warning('自动生成路由权限失败: ' . $e->getMessage());
+                }
+            });
+        }
     }
 
     /**
-     * publish config
+     * 获取提供的服务
      */
-    protected function publishConfig()
+    public function provides(): array
     {
-        $this->publishes([
-            __DIR__ . '/../config/rbac.php' => config_path('rbac.php'),
-        ], 'config');
+        return [
+            RbacService::class,
+            RoutePermissionService::class,
+            'rbac',
+        ];
     }
-
-    /**
-     * publish migrations
-     */
-    protected function publishMigrations()
-    {
-        $this->publishes([
-            __DIR__ . '/../database/migrations' => database_path('migrations'),
-        ], 'migrations');
-    }
-
 }

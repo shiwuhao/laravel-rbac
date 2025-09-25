@@ -1,9 +1,30 @@
+# IDE
 .idea
 *.DS_Store
+
+# Composer
 /vendor
-/coverage
-sftp-config.json
 composer.lock
-.subsplit
-.php_cs.cache
+
+# Testing
+/coverage
 /.phpunit.cache/
+
+# Environment
+.env
+.env.backup
+
+# IDE helper files
+.php_cs.cache
+
+# Laravel specific
+/node_modules
+/public/storage
+/storage/*.key
+/homestead.yaml
+/homestead.json
+/npm-debug.log*
+/yarn-error.log*
+/.vagrant
+/.idea
+/public/hot

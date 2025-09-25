@@ -1,18 +1,17 @@
 <?php
 
-namespace Shiwuhao\Rbac\Tests;
+namespace Rbac\Tests;
 
-use Shiwuhao\Rbac\Rbac;
-use Shiwuhao\Rbac\RbacServiceProvider;
+use Orchestra\Testbench\TestCase as BaseTestCase;
+use Rbac\RbacServiceProvider;
 
-/**
- *
- */
-class TestCase extends \Orchestra\Testbench\TestCase
+abstract class TestCase extends BaseTestCase
 {
     /**
-     * @param \Illuminate\Foundation\Application $app
-     * @return string[]
+     * Get package providers.
+     *
+     * @param  \Illuminate\Foundation\Application  $app
+     * @return array
      */
     protected function getPackageProviders($app): array
     {
@@ -22,25 +21,19 @@ class TestCase extends \Orchestra\Testbench\TestCase
     }
 
     /**
-     * @param \Illuminate\Foundation\Application $app
-     * @return string[]
+     * Define environment setup.
+     *
+     * @param  \Illuminate\Foundation\Application  $app
+     * @return void
      */
-    protected function getPackageAliases($app): array
+    protected function getEnvironmentSetUp($app): void
     {
-        return [
-            'rbac' => Rbac::class
-        ];
-    }
-
-    /**
-     * @param \Illuminate\Foundation\Application $app
-     */
-    protected function getEnvironmentSetUp($app)
-    {
-        $app['config']->set('database.default', 'testing');
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite',
+        // Setup default database to use sqlite :memory:
+        $app['config']->set('database.default', 'testbench');
+        $app['config']->set('database.connections.testbench', [
+            'driver'   => 'sqlite',
             'database' => ':memory:',
+            'prefix'   => '',
         ]);
     }
 }
