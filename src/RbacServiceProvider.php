@@ -72,15 +72,10 @@ class RbacServiceProvider extends ServiceProvider
             __DIR__.'/../routes/api.php' => base_path('routes/rbac-api.php'),
         ], 'rbac-routes');
 
-        // 发布Actions文件（核心业务逻辑）
+        // 发布Actions文件（可自定义业务逻辑）
         $this->publishes([
             __DIR__.'/Actions/' => app_path('Actions/Rbac/'),
         ], 'rbac-actions');
-
-        // 发布控制器文件（可选，推荐使用）
-        $this->publishes([
-            __DIR__.'/Http/Controllers/' => app_path('Http/Controllers/Rbac/'),
-        ], 'rbac-controllers');
 
         // 加载迁移文件
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
@@ -101,6 +96,10 @@ class RbacServiceProvider extends ServiceProvider
                 InstallCommand::class,
                 SeedTestDataCommand::class,
                 QuickSeedCommand::class,
+                \Rbac\Commands\ScanPermissionAnnotationsCommand::class,
+                \Rbac\Commands\SyncPermissionsFromRoutesCommand::class,
+                \Rbac\Commands\InitPackagePermissionsCommand::class,
+                \Rbac\Commands\ListPermissionsCommand::class,
             ]);
         }
 

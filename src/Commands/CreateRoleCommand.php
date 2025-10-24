@@ -3,17 +3,19 @@
 namespace Rbac\Commands;
 
 use Illuminate\Console\Command;
-use Rbac\Services\RbacService;
+use Rbac\Actions\Role\CreateRole;
+use Rbac\Actions\Role\AssignRolePermissions;
 use Rbac\Models\Role;
-use Rbac\Enums\GuardType;
 
 /**
  * 创建角色命令
+ * 
+ * 用于手动创建角色并可选地分配权限
  */
 class CreateRoleCommand extends Command
 {
     /**
-     * The name and signature of the console command.
+     * 命令签名
      *
      * @var string
      */
@@ -22,25 +24,19 @@ class CreateRoleCommand extends Command
                             {slug : 角色标识符}
                             {--description= : 角色描述}
                             {--guard=web : 守卫名称}
-                            {--permissions= : 权限列表(逗号分隔)}';
+                            {--permissions= : 权限列表(逗号分隔的权限 ID)}';
 
     /**
-     * The console command description.
+     * 命令描述
      *
      * @var string
      */
     protected $description = '创建新角色';
 
-    protected RbacService $rbacService;
-
-    public function __construct(RbacService $rbacService)
-    {
-        parent::__construct();
-        $this->rbacService = $rbacService;
-    }
-
     /**
-     * Execute the console command.
+     * 执行命令
+     *
+     * @return int
      */
     public function handle(): int
     {
@@ -57,15 +53,20 @@ class CreateRoleCommand extends Command
                 return Command::FAILURE;
             }
 
-            // 创建角色
-            $role = $this->rbacService->createRole($name, $slug, $description, $guard);
+            // 使用 Action 创建角色
+            $role = CreateRole::handle([
+                'name' => $name,
+                'slug' => $slug,
+                'description' => $description,
+                'guard_name' => $guard,
+            ]);
 
             $this->info("角色 '{$name}' 创建成功！");
             $this->table(['ID', '名称', '标识符', '描述', '守卫'], [
-                [$role->id, $role->name, $role->slug, $role->description, $role->guard_name]
+                [$role->id, $role->name, $role->slug, $role->description ?? '-', $role->guard_name]
             ]);
 
-            // 分配权限
+            // 分配权限（如果提供）
             if ($permissions) {
                 $this->assignPermissions($role, $permissions);
             }
@@ -80,27 +81,24 @@ class CreateRoleCommand extends Command
 
     /**
      * 分配权限给角色
+     *
+     * @param Role $role 角色实例
+     * @param string $permissions 权限 ID 列表（逗号分隔）
+     * @return void
      */
     protected function assignPermissions(Role $role, string $permissions): void
     {
-        $permissionSlugs = array_map('trim', explode(',', $permissions));
-        $assignedCount = 0;
+        $permissionIds = array_map('trim', explode(',', $permissions));
+        
+        try {
+            AssignRolePermissions::handle([
+                'permission_ids' => $permissionIds,
+                'replace' => false,
+            ], $role->id);
 
-        foreach ($permissionSlugs as $permissionSlug) {
-            $permission = \Rbac\Models\Permission::where('slug', $permissionSlug)
-                ->where('guard_name', $role->guard_name)
-                ->first();
-
-            if ($permission) {
-                $this->rbacService->assignPermissionToRole($role, $permission);
-                $assignedCount++;
-            } else {
-                $this->warn("权限 '{$permissionSlug}' 不存在，跳过分配");
-            }
-        }
-
-        if ($assignedCount > 0) {
-            $this->info("成功为角色分配了 {$assignedCount} 个权限");
+            $this->info("成功为角色分配了 " . count($permissionIds) . " 个权限");
+        } catch (\Exception $e) {
+            $this->warn("分配权限时出错: " . $e->getMessage());
         }
     }
 }

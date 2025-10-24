@@ -4,12 +4,11 @@ namespace Rbac\Tests\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Rbac\Traits\HasPermissions;
-use Rbac\Traits\HasRoles;
+use Rbac\Traits\HasRolesAndPermissions;
 
 class User extends Authenticatable
 {
-    use HasRoles, HasPermissions;
+    use HasRolesAndPermissions;
 
     /**
      * The attributes that are mass assignable.

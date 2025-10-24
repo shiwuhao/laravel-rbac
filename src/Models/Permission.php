@@ -17,14 +17,17 @@ use Rbac\Contracts\PermissionContract;
  * @property int $id
  * @property string $name
  * @property string $slug
- * @property string $resource
- * @property ActionType $action
+ * @property string $resource 资源标识(数据库字段)
+ * @property string $action 操作类型(数据库字段)
  * @property string|null $description
  * @property GuardType $guard_name
  * @property array|null $metadata
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
+ * 
+ * @property-read string $resource_type 资源类型(访问器别名)
+ * @property-read string $operation 操作(访问器别名)
  */
 class Permission extends Model implements PermissionContract
 {
@@ -33,21 +36,51 @@ class Permission extends Model implements PermissionContract
     protected $fillable = [
         'name',
         'slug',
+        'description',
         'resource',
         'action',
-        'description',
         'guard_name',
         'metadata',
     ];
 
     protected $casts = [
-        'action' => ActionType::class,
-        'guard_name' => GuardType::class,
         'metadata' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
+
+    /**
+     * 访问器: resource_type (映射到 resource 字段)
+     */
+    public function getResourceTypeAttribute(): ?string
+    {
+        return $this->attributes['resource'] ?? null;
+    }
+
+    /**
+     * 修改器: resource_type (映射到 resource 字段)
+     */
+    public function setResourceTypeAttribute(?string $value): void
+    {
+        $this->attributes['resource'] = $value;
+    }
+
+    /**
+     * 访问器: operation (映射到 action 字段)
+     */
+    public function getOperationAttribute(): ?string
+    {
+        return $this->attributes['action'] ?? null;
+    }
+
+    /**
+     * 修改器: operation (映射到 action 字段)
+     */
+    public function setOperationAttribute(?string $value): void
+    {
+        $this->attributes['action'] = $value;
+    }
 
     /**
      * 获取表名
@@ -99,18 +132,42 @@ class Permission extends Model implements PermissionContract
     /**
      * 根据资源类型查询
      */
-    public function scopeByResource(Builder $query, string $resource): Builder
+    public function scopeByResourceType(Builder $query, string $resourceType): Builder
     {
-        return $query->where('resource', $resource);
+        return $query->where('resource', $resourceType);
+    }
+
+    /**
+     * 根据资源实例查询
+     */
+    public function scopeByResourceInstance(Builder $query, string $resourceType, int $resourceId): Builder
+    {
+        return $query->where('resource', $resourceType)
+                    ->where('resource_id', $resourceId);
+    }
+
+    /**
+     * 查询通用权限（不针对特定实例）
+     */
+    public function scopeGeneral(Builder $query): Builder
+    {
+        return $query->whereNull('resource_id');
+    }
+
+    /**
+     * 查询实例权限（针对特定实例）
+     */
+    public function scopeInstance(Builder $query): Builder
+    {
+        return $query->whereNotNull('resource_id');
     }
 
     /**
      * 根据操作类型查询
      */
-    public function scopeByAction(Builder $query, string|ActionType $action): Builder
+    public function scopeByOperation(Builder $query, string $operation): Builder
     {
-        $actionValue = $action instanceof ActionType ? $action->value : $action;
-        return $query->where('action', $actionValue);
+        return $query->where('action', $operation);
     }
 
     /**
@@ -131,13 +188,12 @@ class Permission extends Model implements PermissionContract
     }
 
     /**
-     * 根据资源和操作查询
+     * 根据资源类型和操作查询
      */
-    public function scopeByResourceAction(Builder $query, string $resource, string|ActionType $action): Builder
+    public function scopeByResourceTypeOperation(Builder $query, string $resourceType, string $operation): Builder
     {
-        $actionValue = $action instanceof ActionType ? $action->value : $action;
-        return $query->where('resource', $resource)
-                    ->where('action', $actionValue);
+        return $query->where('resource', $resourceType)
+                    ->where('action', $operation);
     }
 
     /**
@@ -146,10 +202,10 @@ class Permission extends Model implements PermissionContract
     public function scopeWriteOperations(Builder $query): Builder
     {
         return $query->whereIn('action', [
-            ActionType::CREATE->value,
-            ActionType::UPDATE->value,
-            ActionType::DELETE->value,
-            ActionType::IMPORT->value,
+            'create',
+            'update', 
+            'delete',
+            'import',
         ]);
     }
 
@@ -159,27 +215,45 @@ class Permission extends Model implements PermissionContract
     public function scopeReadOperations(Builder $query): Builder
     {
         return $query->whereIn('action', [
-            ActionType::VIEW->value,
-            ActionType::EXPORT->value,
+            'view',
+            'export',
         ]);
     }
 
     /**
      * 生成权限标识符
      */
-    public static function generateSlug(string $resource, string|ActionType $action): string
+    public static function generateSlug(string $resourceType, string $operation, ?int $resourceId = null): string
     {
-        $actionValue = $action instanceof ActionType ? $action->value : $action;
-        return strtolower($resource) . '.' . $actionValue;
+        $slug = strtolower($resourceType) . '.' . $operation;
+        if ($resourceId !== null) {
+            $slug .= '.' . $resourceId;
+        }
+        return $slug;
     }
 
     /**
      * 生成权限名称
      */
-    public static function generateName(string $resource, string|ActionType $action): string
+    public static function generateName(string $resourceType, string $operation, ?int $resourceId = null): string
     {
-        $actionObj = is_string($action) ? ActionType::from($action) : $action;
-        return $actionObj->label() . $resource;
+        $operationLabels = [
+            'view' => '查看',
+            'create' => '创建',
+            'update' => '编辑',
+            'delete' => '删除',
+            'export' => '导出',
+            'import' => '导入',
+        ];
+        
+        $operationLabel = $operationLabels[$operation] ?? $operation;
+        $name = $operationLabel . $resourceType;
+        
+        if ($resourceId !== null) {
+            $name .= "(#{$resourceId})";
+        }
+        
+        return $name;
     }
 
     /**
@@ -187,7 +261,23 @@ class Permission extends Model implements PermissionContract
      */
     public function isWriteOperation(): bool
     {
-        return $this->action->isWriteOperation();
+        return in_array($this->action, ['create', 'update', 'delete', 'import']);
+    }
+
+    /**
+     * 检查是否为实例权限
+     */
+    public function isInstancePermission(): bool
+    {
+        return !is_null($this->resource_id);
+    }
+
+    /**
+     * 检查是否为通用权限
+     */
+    public function isGeneralPermission(): bool
+    {
+        return is_null($this->resource_id);
     }
 
     /**
@@ -195,7 +285,27 @@ class Permission extends Model implements PermissionContract
      */
     public function getFullDescriptionAttribute(): string
     {
-        return $this->description ?: $this->action->description() . ' - ' . $this->resource;
+        if ($this->description) {
+            return $this->description;
+        }
+        
+        $operationLabels = [
+            'view' => '查看',
+            'create' => '创建', 
+            'update' => '编辑',
+            'delete' => '删除',
+            'export' => '导出',
+            'import' => '导入',
+        ];
+        
+        $operationLabel = $operationLabels[$this->action] ?? $this->action;
+        $desc = $operationLabel . ' - ' . $this->resource;
+        
+        if ($this->resource_id) {
+            $desc .= "(#{$this->resource_id})";
+        }
+        
+        return $desc;
     }
 
     /**

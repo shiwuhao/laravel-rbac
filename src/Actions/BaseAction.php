@@ -2,184 +2,102 @@
 
 namespace Rbac\Actions;
 
-use Rbac\Actions\Contracts\ActionInterface;
-use Rbac\Services\ResponseManager;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Rbac\Contracts\ResponseFormatter;
 
 /**
- * Action 抽象基类
+ * Action 基类
  * 
- * 提供通用的响应处理和错误处理方法
+ * 使用上下文模式统一 Action 执行流程
  */
-abstract class BaseAction implements ActionInterface
+abstract class BaseAction
 {
-    protected ResponseManager $responseManager;
+    protected ResponseFormatter $response;
+    protected ActionContext $context;
 
-    public function __construct(ResponseManager $responseManager = null)
+    public function __construct()
     {
-        $this->responseManager = $responseManager ?? app(ResponseManager::class);
-    }
-    /**
-     * 成功响应
-     * 
-     * @param mixed $data 响应数据
-     * @param string $message 响应消息
-     * @param int $code HTTP状态码
-     * @return JsonResponse
-     */
-    protected function success($data = null, string $message = 'Success', int $code = Response::HTTP_OK): JsonResponse
-    {
-        $response = [
-            'success' => true,
-            'message' => $message,
-        ];
-
-        if ($data !== null) {
-            $response['data'] = $this->transformData($data);
-        }
-
-        return response()->json($response, $code);
+        $this->response = app(config('rbac.response_formatter'));
     }
 
     /**
-     * 错误响应
+     * 执行核心业务逻辑
      * 
-     * @param string $message 错误消息
-     * @param int $code HTTP状态码
-     * @param array $errors 具体错误信息
-     * @return JsonResponse
-     */
-    protected function error(string $message = 'Error', int $code = Response::HTTP_BAD_REQUEST, array $errors = []): JsonResponse
-    {
-        $response = [
-            'success' => false,
-            'message' => $message,
-        ];
-
-        if (!empty($errors)) {
-            $response['errors'] = $errors;
-        }
-
-        return response()->json($response, $code);
-    }
-
-    /**
-     * 验证失败响应
-     * 
-     * @param array $errors 验证错误
-     * @return JsonResponse
-     */
-    protected function validationError(array $errors): JsonResponse
-    {
-        return $this->error('Validation failed', Response::HTTP_UNPROCESSABLE_ENTITY, $errors);
-    }
-
-    /**
-     * 未找到资源响应
-     * 
-     * @param string $resource 资源名称
-     * @return JsonResponse
-     */
-    protected function notFound(string $resource = 'Resource'): JsonResponse
-    {
-        return $this->error($resource . ' not found', Response::HTTP_NOT_FOUND);
-    }
-
-    /**
-     * 权限不足响应
-     * 
-     * @param string $message 权限错误消息
-     * @return JsonResponse
-     */
-    protected function forbidden(string $message = 'Access denied'): JsonResponse
-    {
-        return $this->error($message, Response::HTTP_FORBIDDEN);
-    }
-
-    /**
-     * 转换数据格式
-     * 
-     * @param mixed $data 原始数据
+     * 子类必须实现此方法，通过 $this->context 访问数据
+     *
      * @return mixed
      */
-    protected function transformData($data)
+    abstract protected function execute(): mixed;
+
+    /**
+     * 定义验证规则
+     * 
+     * 可在子类中访问 $this->context 获取动态规则
+     *
+     * @return array<string, string|array>
+     */
+    protected function rules(): array
     {
-        if ($data instanceof Model) {
-            return $data->toArray();
-        }
-
-        if ($data instanceof Collection) {
-            return $data->map(function ($item) {
-                return $item instanceof Model ? $item->toArray() : $item;
-            })->toArray();
-        }
-
-        return $data;
+        return [];
     }
 
     /**
-     * 获取分页响应
-     * 
-     * @param \Illuminate\Contracts\Pagination\Paginator $paginator 分页器
-     * @param string $message 响应消息
-     * @return JsonResponse
+     * 验证数据
+     *
+     * @param array $data 待验证的数据
+     * @return array 验证后的数据
      */
-    protected function paginated($paginator, string $message = 'Success'): JsonResponse
+    public function validate(array $data): array
     {
-        return response()->json([
-            'success' => true,
-            'message' => $message,
-            'data' => $paginator->items(),
-            'pagination' => [
-                'current_page' => $paginator->currentPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'last_page' => $paginator->lastPage(),
-                'from' => $paginator->firstItem(),
-                'to' => $paginator->lastItem(),
-            ],
-        ]);
+        $rules = $this->rules();
+        $validator = Validator::make($data, $rules);
+        return $validator->validate();
     }
 
     /**
-     * 记录操作日志
+     * 静态调用入口
      * 
-     * @param string $action 操作类型
-     * @param array $context 上下文信息
-     * @return void
+     * @param array $data 数据数组
+     * @param mixed ...$args 额外参数（如 ID）
+     * @return mixed
+     * 
+     * @example
+     * UpdateRole::handle($request->all(), $roleId);
+     * CreateRole::handle($request->all());
      */
-    protected function log(string $action, array $context = []): void
+    public static function handle(array $data = [], ...$args): mixed
     {
-        \Log::info("RBAC Action: {$action}", array_merge($context, [
-            'user_id' => auth()->id(),
-            'ip' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]));
+        $action = app(static::class);
+        $action->context = new ActionContext($data, $args);
+        
+        $validated = $action->validate($data);
+        $action->context = new ActionContext($validated, $args);
+        
+        return $action->execute();
     }
 
     /**
-     * 处理异常
-     * 
-     * @param \Throwable $exception 异常对象
-     * @param string $action 操作名称
-     * @return JsonResponse
+     * 实例调用入口（支持依赖注入）
+     *
+     * @param array $data 数据数组
+     * @param mixed ...$args 额外参数
+     * @return mixed
      */
-    protected function handleException(\Throwable $exception, string $action = 'Action'): JsonResponse
+    public function __invoke(array $data = [], ...$args): mixed
     {
-        \Log::error("RBAC {$action} failed", [
-            'exception' => $exception->getMessage(),
-            'trace' => $exception->getTraceAsString(),
-            'user_id' => auth()->id(),
-        ]);
-
-        if (app()->environment('local', 'testing')) {
-            return $this->error($exception->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        if (empty($data) && function_exists('request')) {
+            $data = request()->all();
         }
 
-        return $this->error('Internal server error', Response::HTTP_INTERNAL_SERVER_ERROR);
+        try {
+            $validated = $this->validate($data);
+            $this->context = new ActionContext($validated, $args);
+            
+            $result = $this->execute();
+
+            return $this->response->success($result);
+        } catch (\Throwable $e) {
+            return $this->response->failure($e->getMessage());
+        }
     }
 }

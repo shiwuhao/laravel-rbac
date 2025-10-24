@@ -5,13 +5,12 @@ namespace Rbac\Traits;
 use Rbac\Services\ResponseManager;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 
 /**
  * 响应处理特性
  * 
- * 为控制器提供统一的响应处理方法
+ * @deprecated 此 Trait 已废弃，推荐直接使用 Action 模式
+ * 为控制器提供统一的响应处理方法（仅在使用控制器时需要）
  */
 trait HandlesResponses
 {

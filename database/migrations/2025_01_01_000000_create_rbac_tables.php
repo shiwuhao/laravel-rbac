@@ -33,15 +33,14 @@ return new class extends Migration
             $table->id();
             $table->string('name', 100)->comment('权限名称');
             $table->string('slug', 100)->comment('权限标识符');
-            $table->string('resource', 50)->comment('资源类型');
-            $table->string('action', 50)->comment('操作类型');
             $table->text('description')->nullable()->comment('权限描述');
+            $table->string('resource', 100)->nullable()->comment('资源标识');
+            $table->string('action', 50)->nullable()->comment('操作类型');
             $table->string('guard_name', 50)->default('web')->comment('守卫名称');
             $table->json('metadata')->nullable()->comment('元数据');
             $table->timestamps();
             $table->softDeletes();
 
-            // 索引优化
             $table->unique(['slug', 'guard_name']);
             $table->index(['resource', 'action']);
             $table->index('guard_name');

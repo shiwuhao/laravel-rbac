@@ -34,7 +34,6 @@ class Role extends Model implements RoleContract
     ];
 
     protected $casts = [
-        'guard_name' => GuardType::class,
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

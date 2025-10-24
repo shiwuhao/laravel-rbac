@@ -32,6 +32,7 @@ return [
         'role' => \Rbac\Models\Role::class,
         'permission' => \Rbac\Models\Permission::class,
         'data_scope' => \Rbac\Models\DataScope::class,
+        'user' => env('RBAC_USER_MODEL', \App\Models\User::class),
     ],
 
     /*
@@ -59,24 +60,10 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Actions + Controllers架构
-    |--------------------------------------------------------------------------
-    |
-    | 此扩展包采用Actions + Controllers混合架构设计：
-    | - 路由绑定控制器，支持缓存、中间件等功能
-    | - 所有业务逻辑在Actions中实现，控制器只负责调用
-    | - 既保持灵活性，又保证代码的可维护性
-    | - Actions和控制器都可以发布到项目中进行自定义
-    |
-    */
-    'actions_controllers_architecture' => true,
-
-    /*
-    |--------------------------------------------------------------------------
     | API路由配置
     |--------------------------------------------------------------------------
     |
-    | 纯API架构只提供API路由，直接绑定Actions
+    | API 路由相关配置，路由直接绑定 Action 类
     |
     */
     'api' => [
@@ -107,7 +94,7 @@ return [
     'route_permission' => [
         // 是否自动生成路由权限
         'auto_generate' => env('RBAC_AUTO_GENERATE_ROUTE_PERMISSIONS', false),
-        
+
         // 跳过的路由名称模式
         'skip_patterns' => [
             'debugbar.*',
@@ -119,7 +106,7 @@ return [
             'filament.*',
             'nova.*',
         ],
-        
+
         // 是否清理孤立权限
         'clean_orphaned' => env('RBAC_CLEAN_ORPHANED_PERMISSIONS', false),
     ],
@@ -149,7 +136,7 @@ return [
     'authorization' => [
         // 是否启用权限门检查
         'enable_gates' => true,
-        
+
         // 权限检查失败时的响应
         'unauthorized_response' => [
             'message' => '权限不足',
@@ -168,7 +155,7 @@ return [
     'data_scope' => [
         // 默认数据范围类型
         'default_type' => 'personal',
-        
+
         // 数据范围缓存时间（秒）
         'cache_ttl' => 3600,
     ],
@@ -184,10 +171,10 @@ return [
     'performance' => [
         // 是否启用预加载
         'enable_eager_loading' => true,
-        
+
         // 批量操作大小
         'batch_size' => 100,
-        
+
         // 查询缓存时间（秒）
         'query_cache_ttl' => 300,
     ],
@@ -203,8 +190,14 @@ return [
     'debug' => [
         // 是否启用查询日志
         'log_queries' => env('RBAC_LOG_QUERIES', false),
-        
+
         // 是否启用权限检查日志
         'log_permission_checks' => env('RBAC_LOG_PERMISSION_CHECKS', false),
     ],
+
+    // 是否自动注册默认路由
+    'register_routes' => true,
+
+    // 响应格式化器
+    'response_formatter' => \Rbac\Support\ResponseFormatter::class,
 ];

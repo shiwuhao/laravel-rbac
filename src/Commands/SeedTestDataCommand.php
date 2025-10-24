@@ -14,11 +14,14 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * 填充RBAC测试数据命令
+ * 
+ * 用于创建完整的测试数据，包括角色、权限、数据范围等
+ * 支持强制重建和清理数据
  */
 class SeedTestDataCommand extends Command
 {
     /**
-     * The name and signature of the console command.
+     * 命令签名
      *
      * @var string
      */
@@ -28,14 +31,24 @@ class SeedTestDataCommand extends Command
                             {--clean : 仅清空数据不创建}';
 
     /**
-     * The console command description.
+     * 命令描述
      *
      * @var string
      */
     protected $description = '填充RBAC系统测试数据';
 
+    /**
+     * RBAC 服务实例
+     *
+     * @var RbacService
+     */
     protected RbacService $rbacService;
 
+    /**
+     * 构造函数
+     *
+     * @param RbacService $rbacService
+     */
     public function __construct(RbacService $rbacService)
     {
         parent::__construct();
@@ -43,7 +56,9 @@ class SeedTestDataCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     * 执行命令
+     *
+     * @return int
      */
     public function handle(): int
     {

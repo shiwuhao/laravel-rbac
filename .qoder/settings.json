@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "ask": [
+      "Read(!/Users/shiwuhao/Code/Backend/laravel-rbac/**)",
+      "Edit(!/Users/shiwuhao/Code/Backend/laravel-rbac/**)"
+    ],
+    "allow": [
+      "Read(/Users/shiwuhao/Code/Backend/laravel-rbac/**)",
+      "Edit(/Users/shiwuhao/Code/Backend/laravel-rbac/**)"
+    ]
+  },
+  "memoryImport": {},
+  "monitoring": {}
+}

@@ -1,5 +1,5 @@
 # IDE
-.idea
+.idea/
 *.DS_Store
 
 # Composer
@@ -26,5 +26,4 @@ composer.lock
 /npm-debug.log*
 /yarn-error.log*
 /.vagrant
-/.idea
 /public/hot

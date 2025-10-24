@@ -261,19 +261,36 @@ trait HasRolesAndPermissions
     public function getAllPermissions(): Collection
     {
         $cacheKey = config('rbac.cache.key') . '.user_permissions.' . $this->id;
+        $cacheDriver = config('cache.default');
         
-        return Cache::remember($cacheKey, config('rbac.cache.expiration_time'), function () {
-            // 预加载关联关系
-            $this->loadMissing(['roles.permissions', 'directPermissions']);
-            
-            // 获取角色权限
-            $rolePermissions = $this->roles->flatMap->permissions;
-            
-            // 合并直接权限并去重
-            return $rolePermissions
-                ->merge($this->directPermissions)
-                ->unique('id');
-        });
+        if ($cacheDriver === 'redis' || $cacheDriver === 'memcached') {
+            return Cache::remember($cacheKey, config('rbac.cache.expiration_time'), function () {
+                // 预加载关联关系
+                $this->loadMissing(['roles.permissions', 'directPermissions']);
+                
+                // 获取角色权限
+                $rolePermissions = $this->roles->flatMap->permissions;
+                
+                // 合并直接权限并去重
+                return $rolePermissions
+                    ->merge($this->directPermissions)
+                    ->unique('id');
+            });
+        }
+        
+        return Cache::tags(['rbac', 'user_permissions'])
+            ->remember($cacheKey, config('rbac.cache.expiration_time'), function () {
+                // 预加载关联关系
+                $this->loadMissing(['roles.permissions', 'directPermissions']);
+                
+                // 获取角色权限
+                $rolePermissions = $this->roles->flatMap->permissions;
+                
+                // 合并直接权限并去重
+                return $rolePermissions
+                    ->merge($this->directPermissions)
+                    ->unique('id');
+            });
     }
 
     /**
@@ -324,6 +341,38 @@ trait HasRolesAndPermissions
     }
 
     /**
+     * 移除用户数据范围
+     */
+    public function removeDataScope(string|array|DataScope $dataScopes): self
+    {
+        $dataScopes = collect(\Arr::wrap($dataScopes))
+            ->map(function ($dataScope) {
+                if (is_string($dataScope)) {
+                    return DataScope::where('name', $dataScope)->first();
+                }
+                return $dataScope;
+            })
+            ->filter()
+            ->pluck('id');
+
+        $this->dataScopes()->detach($dataScopes);
+
+        return $this;
+    }
+
+    /**
+     * 检查用户是否具有数据范围
+     */
+    public function hasDataScope(string|DataScope $dataScope): bool
+    {
+        if (is_string($dataScope)) {
+            return $this->dataScopes->contains('name', $dataScope);
+        }
+
+        return $this->dataScopes->contains('id', $dataScope->id);
+    }
+
+    /**
      * 检查用户是否为超级管理员
      */
     public function isSuperAdmin(): bool
@@ -337,7 +386,132 @@ trait HasRolesAndPermissions
     public function forgetCachedPermissions(): void
     {
         $cacheKey = config('rbac.cache.key') . '.user_permissions.' . $this->id;
-        Cache::forget($cacheKey);
+        $cacheDriver = config('cache.default');
+        
+        if ($cacheDriver === 'redis' || $cacheDriver === 'memcached') {
+            Cache::forget($cacheKey);
+        } else {
+            Cache::tags(['rbac', 'user_permissions'])->flush();
+        }
+    }
+
+    /**
+     * 检查用户是否有特定资源实例的权限
+     */
+    public function hasInstancePermission(string $resourceType, int $resourceId, string $operation): bool
+    {
+        $hasDirectInstancePermission = $this->directPermissions()
+            ->where('resource', $resourceType)
+            ->where('resource_id', $resourceId)
+            ->where('action', $operation)
+            ->exists();
+            
+        if ($hasDirectInstancePermission) {
+            return true;
+        }
+        
+        $hasRoleInstancePermission = $this->roles()
+            ->whereHas('permissions', function ($query) use ($resourceType, $resourceId, $operation) {
+                $query->where('resource', $resourceType)
+                     ->where('resource_id', $resourceId)
+                     ->where('action', $operation);
+            })
+            ->exists();
+            
+        if ($hasRoleInstancePermission) {
+            return true;
+        }
+        
+        return $this->hasGeneralPermission($resourceType, $operation);
+    }
+    
+    /**
+     * 检查用户是否有资源类型的通用权限
+     */
+    public function hasGeneralPermission(string $resourceType, string $operation): bool
+    {
+        $hasDirectGeneralPermission = $this->directPermissions()
+            ->where('resource', $resourceType)
+            ->whereNull('resource_id')
+            ->where('action', $operation)
+            ->exists();
+            
+        if ($hasDirectGeneralPermission) {
+            return true;
+        }
+        
+        return $this->roles()
+            ->whereHas('permissions', function ($query) use ($resourceType, $operation) {
+                $query->where('resource', $resourceType)
+                     ->whereNull('resource_id')
+                     ->where('action', $operation);
+            })
+            ->exists();
+    }
+    
+    /**
+     * 获取用户对特定资源实例的所有权限
+     */
+    public function getInstancePermissions(string $resourceType, int $resourceId): array
+    {
+        $permissions = [];
+        
+        $directPermissions = $this->directPermissions()
+            ->where('resource', $resourceType)
+            ->where('resource_id', $resourceId)
+            ->pluck('action')
+            ->toArray();
+            
+        $permissions = array_merge($permissions, $directPermissions);
+        
+        $rolePermissions = $this->roles()
+            ->with(['permissions' => function ($query) use ($resourceType, $resourceId) {
+                $query->where('resource', $resourceType)
+                     ->where('resource_id', $resourceId);
+            }])
+            ->get()
+            ->pluck('permissions')
+            ->flatten()
+            ->pluck('action')
+            ->toArray();
+            
+        $permissions = array_merge($permissions, $rolePermissions);
+        
+        $generalPermissions = $this->getGeneralPermissions($resourceType);
+        $permissions = array_merge($permissions, $generalPermissions);
+        
+        return array_unique($permissions);
+    }
+    
+    /**
+     * 获取用户对资源类型的通用权限
+     */
+    public function getGeneralPermissions(string $resourceType): array
+    {
+        $permissions = [];
+        
+        $directPermissions = $this->directPermissions()
+            ->where('resource', $resourceType)
+            ->whereNull('resource_id')
+            ->pluck('action')
+            ->toArray();
+            
+        $permissions = array_merge($permissions, $directPermissions);
+        
+        $rolePermissions = $this->roles()
+            ->with(['permissions' => function ($query) use ($resourceType) {
+                $query->where('resource', $resourceType)
+                     ->whereNull('resource_id');
+            }])
+            ->get()
+            ->pluck('permissions')
+            ->flatten()
+            ->pluck('action')
+            ->toArray();
+            
+        $permissions = array_merge($permissions, $rolePermissions);
+        
+        return array_unique($permissions);
     }
 
     /**

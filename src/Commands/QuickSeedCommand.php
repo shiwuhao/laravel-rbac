@@ -10,11 +10,14 @@ use Rbac\Enums\DataScopeType;
 
 /**
  * 快速填充基础RBAC数据命令
+ * 
+ * 用于快速创建基础的角色、权限和数据范围
+ * 适合开发环境快速搭建测试数据
  */
 class QuickSeedCommand extends Command
 {
     /**
-     * The name and signature of the console command.
+     * 命令签名
      *
      * @var string
      */
@@ -22,14 +25,24 @@ class QuickSeedCommand extends Command
                             {--demo : 包含演示数据}';
 
     /**
-     * The console command description.
+     * 命令描述
      *
      * @var string
      */
     protected $description = '快速填充基础RBAC数据（角色、权限、数据范围）';
 
+    /**
+     * RBAC 服务实例
+     *
+     * @var RbacService
+     */
     protected RbacService $rbacService;
 
+    /**
+     * 构造函数
+     *
+     * @param RbacService $rbacService
+     */
     public function __construct(RbacService $rbacService)
     {
         parent::__construct();
@@ -37,7 +50,9 @@ class QuickSeedCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     * 执行命令
+     *
+     * @return int
      */
     public function handle(): int
     {
