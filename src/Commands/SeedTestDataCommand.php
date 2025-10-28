@@ -3,7 +3,6 @@
 namespace Rbac\Commands;
 
 use Illuminate\Console\Command;
-use Rbac\Services\RbacService;
 use Rbac\Models\Role;
 use Rbac\Models\Permission;
 use Rbac\Models\DataScope;
@@ -11,6 +10,12 @@ use Rbac\Enums\ActionType;
 use Rbac\Enums\GuardType;
 use Rbac\Enums\DataScopeType;
 use Illuminate\Support\Facades\DB;
+use Rbac\Actions\DataScope\CreateDataScope;
+use Rbac\Actions\Permission\CreatePermission;
+use Rbac\Actions\Role\CreateRole;
+use Rbac\Actions\Role\AssignRolePermissions;
+use Rbac\Actions\Permission\AssignDataScopeToPermission;
+use Rbac\Actions\UserPermission\AssignRoleToUser;
 
 /**
  * 填充RBAC测试数据命令
@@ -38,21 +43,11 @@ class SeedTestDataCommand extends Command
     protected $description = '填充RBAC系统测试数据';
 
     /**
-     * RBAC 服务实例
-     *
-     * @var RbacService
-     */
-    protected RbacService $rbacService;
-
-    /**
      * 构造函数
-     *
-     * @param RbacService $rbacService
      */
-    public function __construct(RbacService $rbacService)
+    public function __construct()
     {
         parent::__construct();
-        $this->rbacService = $rbacService;
     }
 
     /**
@@ -183,12 +178,12 @@ class SeedTestDataCommand extends Command
 
         $createdScopes = [];
         foreach ($scopes as $scope) {
-            $createdScopes[] = $this->rbacService->createDataScope(
-                $scope['name'],
-                $scope['type'],
-                $scope['config'],
-                $scope['description']
-            );
+            $createdScopes[] = CreateDataScope::handle([
+                'name' => $scope['name'],
+                'type' => $scope['type']->value,
+                'config' => $scope['config'],
+                'description' => $scope['description']
+            ]);
         }
 
         return $createdScopes;
@@ -218,14 +213,14 @@ class SeedTestDataCommand extends Command
         $permissions = [];
         foreach ($resources as $resource => $resourceName) {
             foreach ($actions as $action => $actionName) {
-                $permission = $this->rbacService->createPermission(
-                    $actionName . $resourceName,
-                    $resource . '.' . $action,
-                    $resource,
-                    $action,
-                    $actionName . $resourceName . '权限',
-                    GuardType::WEB
-                );
+                $permission = CreatePermission::handle([
+                    'name' => $actionName . $resourceName,
+                    'slug' => $resource . '.' . $action,
+                    'resource' => $resource,
+                    'action' => $action,
+                    'description' => $actionName . $resourceName . '权限',
+                    'guard_name' => GuardType::WEB->value
+                ]);
                 $permissions[] = $permission;
             }
         }
@@ -249,14 +244,14 @@ class SeedTestDataCommand extends Command
         ];
 
         foreach ($specialPermissions as $perm) {
-            $permissions[] = $this->rbacService->createPermission(
-                $perm['name'],
-                $perm['slug'],
-                $perm['resource'],
-                $perm['action'],
-                $perm['description'],
-                GuardType::WEB
-            );
+            $permissions[] = CreatePermission::handle([
+                'name' => $perm['name'],
+                'slug' => $perm['slug'],
+                'resource' => $perm['resource'],
+                'action' => $perm['action']->value,
+                'description' => $perm['description'],
+                'guard_name' => GuardType::WEB->value
+            ]);
         }
 
         return $permissions;
@@ -297,12 +292,12 @@ class SeedTestDataCommand extends Command
 
         $createdRoles = [];
         foreach ($roles as $role) {
-            $createdRoles[] = $this->rbacService->createRole(
-                $role['name'],
-                $role['slug'],
-                $role['description'],
-                GuardType::WEB
-            );
+            $createdRoles[] = CreateRole::handle([
+                'name' => $role['name'],
+                'slug' => $role['slug'],
+                'description' => $role['description'],
+                'guard_name' => GuardType::WEB->value
+            ]);
         }
 
         return $createdRoles;
@@ -315,18 +310,16 @@ class SeedTestDataCommand extends Command
     {
         // 超级管理员：所有权限
         $superAdmin = collect($roles)->firstWhere('slug', 'super-admin');
-        foreach ($permissions as $permission) {
-            $this->rbacService->assignPermissionToRole($superAdmin, $permission);
-        }
+        $permissionIds = collect($permissions)->pluck('id')->toArray();
+        AssignRolePermissions::handle(['permission_ids' => $permissionIds, 'replace' => true], $superAdmin->id);
 
         // 系统管理员：除删除系统管理外的所有权限
         $admin = collect($roles)->firstWhere('slug', 'admin');
         $adminPermissions = collect($permissions)->reject(function ($permission) {
             return $permission->resource === 'system' && $permission->action === 'delete';
         });
-        foreach ($adminPermissions as $permission) {
-            $this->rbacService->assignPermissionToRole($admin, $permission);
-        }
+        $adminPermissionIds = $adminPermissions->pluck('id')->toArray();
+        AssignRolePermissions::handle(['permission_ids' => $adminPermissionIds, 'replace' => true], $admin->id);
 
         // 部门经理：用户、部门、报表相关权限
         $manager = collect($roles)->firstWhere('slug', 'manager');
@@ -334,9 +327,8 @@ class SeedTestDataCommand extends Command
         $managerPermissions = collect($permissions)->filter(function ($permission) use ($managerResources) {
             return in_array($permission->resource, $managerResources);
         });
-        foreach ($managerPermissions as $permission) {
-            $this->rbacService->assignPermissionToRole($manager, $permission);
-        }
+        $managerPermissionIds = $managerPermissions->pluck('id')->toArray();
+        AssignRolePermissions::handle(['permission_ids' => $managerPermissionIds, 'replace' => true], $manager->id);
 
         // 普通员工：基础查看和个人数据权限
         $employee = collect($roles)->firstWhere('slug', 'employee');
@@ -344,9 +336,8 @@ class SeedTestDataCommand extends Command
             return in_array($permission->action, ['view']) ||
                    ($permission->resource === 'user' && $permission->action === 'update');
         });
-        foreach ($employeePermissions as $permission) {
-            $this->rbacService->assignPermissionToRole($employee, $permission);
-        }
+        $employeePermissionIds = $employeePermissions->pluck('id')->toArray();
+        AssignRolePermissions::handle(['permission_ids' => $employeePermissionIds, 'replace' => true], $employee->id);
 
         // 访客：只有查看权限
         $guest = collect($roles)->firstWhere('slug', 'guest');
@@ -354,9 +345,8 @@ class SeedTestDataCommand extends Command
             return $permission->action === 'view' &&
                    in_array($permission->resource, ['user', 'department', 'report']);
         });
-        foreach ($guestPermissions as $permission) {
-            $this->rbacService->assignPermissionToRole($guest, $permission);
-        }
+        $guestPermissionIds = $guestPermissions->pluck('id')->toArray();
+        AssignRolePermissions::handle(['permission_ids' => $guestPermissionIds, 'replace' => true], $guest->id);
     }
 
     /**
@@ -374,20 +364,20 @@ class SeedTestDataCommand extends Command
                 case 'user':
                 case 'department':
                     // 用户和部门数据支持所有数据范围
-                    $this->rbacService->assignDataScopeToPermission($permission, $allScope);
-                    $this->rbacService->assignDataScopeToPermission($permission, $deptScope);
-                    $this->rbacService->assignDataScopeToPermission($permission, $personalScope);
+                    AssignDataScopeToPermission::handle(['data_scope_id' => $allScope->id], $permission->id);
+                    AssignDataScopeToPermission::handle(['data_scope_id' => $deptScope->id], $permission->id);
+                    AssignDataScopeToPermission::handle(['data_scope_id' => $personalScope->id], $permission->id);
                     break;
 
                 case 'report':
                     // 报表数据支持全部和部门范围
-                    $this->rbacService->assignDataScopeToPermission($permission, $allScope);
-                    $this->rbacService->assignDataScopeToPermission($permission, $deptScope);
+                    AssignDataScopeToPermission::handle(['data_scope_id' => $allScope->id], $permission->id);
+                    AssignDataScopeToPermission::handle(['data_scope_id' => $deptScope->id], $permission->id);
                     break;
 
                 default:
                     // 其他资源默认个人范围
-                    $this->rbacService->assignDataScopeToPermission($permission, $personalScope);
+                    AssignDataScopeToPermission::handle(['data_scope_id' => $personalScope->id], $permission->id);
                     break;
             }
         }
@@ -460,7 +450,7 @@ class SeedTestDataCommand extends Command
             if (isset($roleMap[$user->email])) {
                 $role = collect($roles)->firstWhere('slug', $roleMap[$user->email]);
                 if ($role) {
-                    $this->rbacService->assignRoleToUser($user, $role);
+                    AssignRoleToUser::handle(['role_id' => $role->id], $user->id);
                 }
             }
         }

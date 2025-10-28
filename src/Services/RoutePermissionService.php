@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Rbac\Models\Permission;
 use Rbac\Enums\ActionType;
 use Rbac\Enums\GuardType;
+use Rbac\Actions\Permission\FindOrCreatePermission;
 
 /**
  * 路由权限生成服务
@@ -15,11 +16,9 @@ use Rbac\Enums\GuardType;
  */
 class RoutePermissionService
 {
-    protected RbacService $rbacService;
-
-    public function __construct(RbacService $rbacService)
+    public function __construct()
     {
-        $this->rbacService = $rbacService;
+        // 不再需要 RbacService
     }
 
     /**
@@ -60,13 +59,13 @@ class RoutePermissionService
         $name = $this->generateNameFromRoute($route);
         $resource = $this->getResourceFromRoute($route);
 
-        return $this->rbacService->findOrCreatePermission(
-            $slug,
-            $name,
-            $resource,
-            $action,
-            $this->getGuardFromRoute($route)
-        );
+        return FindOrCreatePermission::handle([
+            'slug' => $slug,
+            'name' => $name,
+            'resource' => $resource,
+            'action' => $action->value,
+            'guard' => $this->getGuardFromRoute($route)->value
+        ]);
     }
 
     /**

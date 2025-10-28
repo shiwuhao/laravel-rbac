@@ -6,20 +6,22 @@ use Illuminate\Database\Seeder;
 use Rbac\Models\Role;
 use Rbac\Models\Permission;
 use Rbac\Models\DataScope;
-use Rbac\Services\RbacService;
 use Rbac\Enums\ActionType;
 use Rbac\Enums\DataScopeType;
+use Rbac\Actions\DataScope\CreateDataScope;
+use Rbac\Actions\Role\CreateRole;
+use Rbac\Actions\Permission\CreatePermission;
+use Rbac\Actions\Role\SyncRolePermissions;
+use Rbac\Actions\Permission\AssignDataScopeToPermission;
 
 /**
  * RBAC 数据填充器
  */
 class RbacSeeder extends Seeder
 {
-    protected RbacService $rbacService;
-
     public function __construct()
     {
-        $this->rbacService = app(RbacService::class);
+        // 不再需要 RbacService
     }
 
     /**
@@ -99,12 +101,12 @@ class RbacSeeder extends Seeder
         ];
 
         foreach ($dataScopes as $dataScopeData) {
-            $this->rbacService->createDataScope(
-                $dataScopeData['name'],
-                $dataScopeData['type'],
-                $dataScopeData['config'],
-                $dataScopeData['description']
-            );
+            CreateDataScope::handle([
+                'name' => $dataScopeData['name'],
+                'type' => $dataScopeData['type']->value,
+                'config' => $dataScopeData['config'],
+                'description' => $dataScopeData['description']
+            ]);
         }
     }
 
@@ -164,11 +166,11 @@ class RbacSeeder extends Seeder
         ];
 
         foreach ($roles as $roleData) {
-            $this->rbacService->createRole(
-                $roleData['name'],
-                $roleData['slug'],
-                $roleData['description']
-            );
+            CreateRole::handle([
+                'name' => $roleData['name'],
+                'slug' => $roleData['slug'],
+                'description' => $roleData['description']
+            ]);
         }
     }
 
@@ -213,13 +215,13 @@ class RbacSeeder extends Seeder
                     continue;
                 }
 
-                $this->rbacService->createPermission(
-                    $action->label() . $resourceName,
-                    strtolower($resource) . '.' . $action->value,
-                    $resource,
-                    $action,
-                    "允许{$action->description()}: {$resourceName}"
-                );
+                CreatePermission::handle([
+                    'name' => $action->label() . $resourceName,
+                    'slug' => strtolower($resource) . '.' . $action->value,
+                    'resource' => $resource,
+                    'action' => $action->value,
+                    'description' => "允许{$action->description()}: {$resourceName}"
+                ]);
             }
         }
 
@@ -249,13 +251,13 @@ class RbacSeeder extends Seeder
         ];
 
         foreach ($specialPermissions as $permission) {
-            $this->rbacService->createPermission(
-                $permission['name'],
-                $permission['slug'],
-                $permission['resource'],
-                $permission['action'],
-                $permission['description']
-            );
+            CreatePermission::handle([
+                'name' => $permission['name'],
+                'slug' => $permission['slug'],
+                'resource' => $permission['resource'],
+                'action' => $permission['action']->value,
+                'description' => $permission['description']
+            ]);
         }
     }
 
@@ -269,45 +271,45 @@ class RbacSeeder extends Seeder
         // 超级管理员拥有所有权限
         $superAdmin = Role::where('slug', 'super-admin')->first();
         $allPermissions = Permission::all();
-        $this->rbacService->syncRolePermissions($superAdmin, $allPermissions->pluck('id')->toArray());
+        SyncRolePermissions::handle(['permission_ids' => $allPermissions->pluck('id')->toArray()], $superAdmin->id);
 
         // 管理员权限
         $admin = Role::where('slug', 'admin')->first();
         $adminPermissions = Permission::whereIn('resource', [
             'User', 'Role', 'Permission', 'Setting', 'Log', 'Report'
         ])->get();
-        $this->rbacService->syncRolePermissions($admin, $adminPermissions->pluck('id')->toArray());
+        SyncRolePermissions::handle(['permission_ids' => $adminPermissions->pluck('id')->toArray()], $admin->id);
 
         // 编辑权限
         $editor = Role::where('slug', 'editor')->first();
         $editorPermissions = Permission::whereIn('resource', [
             'Post', 'Comment', 'Category', 'Tag', 'File'
         ])->whereIn('action', ['view', 'create', 'update', 'delete'])->get();
-        $this->rbacService->syncRolePermissions($editor, $editorPermissions->pluck('id')->toArray());
+        SyncRolePermissions::handle(['permission_ids' => $editorPermissions->pluck('id')->toArray()], $editor->id);
 
         // 作者权限
         $author = Role::where('slug', 'author')->first();
         $authorPermissions = Permission::whereIn('resource', ['Post', 'Category', 'Tag'])
             ->whereIn('action', ['view', 'create', 'update'])->get();
-        $this->rbacService->syncRolePermissions($author, $authorPermissions->pluck('id')->toArray());
+        SyncRolePermissions::handle(['permission_ids' => $authorPermissions->pluck('id')->toArray()], $author->id);
 
         // 审核员权限
         $reviewer = Role::where('slug', 'reviewer')->first();
         $reviewerPermissions = Permission::whereIn('resource', ['Post', 'Comment'])
             ->whereIn('action', ['view', 'update'])->get();
-        $this->rbacService->syncRolePermissions($reviewer, $reviewerPermissions->pluck('id')->toArray());
+        SyncRolePermissions::handle(['permission_ids' => $reviewerPermissions->pluck('id')->toArray()], $reviewer->id);
 
         // 财务权限
         $finance = Role::where('slug', 'finance')->first();
         $financePermissions = Permission::whereIn('resource', ['Order', 'Report'])
             ->whereIn('action', ['view', 'export'])->get();
-        $this->rbacService->syncRolePermissions($finance, $financePermissions->pluck('id')->toArray());
+        SyncRolePermissions::handle(['permission_ids' => $financePermissions->pluck('id')->toArray()], $finance->id);
 
         // 普通用户权限
         $user = Role::where('slug', 'user')->first();
         $userPermissions = Permission::whereIn('resource', ['Post', 'Comment'])
             ->where('action', 'view')->get();
-        $this->rbacService->syncRolePermissions($user, $userPermissions->pluck('id')->toArray());
+        SyncRolePermissions::handle(['permission_ids' => $userPermissions->pluck('id')->toArray()], $user->id);
     }
 
     /**
@@ -325,26 +327,26 @@ class RbacSeeder extends Seeder
         // 用户管理权限使用组织数据范围
         $userPermissions = Permission::where('resource', 'User')->get();
         foreach ($userPermissions as $permission) {
-            $this->rbacService->assignDataScopeToPermission($permission, $orgDataScope);
+            AssignDataScopeToPermission::handle(['data_scope_id' => $orgDataScope->id], $permission->id);
         }
 
         // 文章权限使用个人数据范围
         $postPermissions = Permission::where('resource', 'Post')
             ->whereIn('action', ['create', 'update', 'delete'])->get();
         foreach ($postPermissions as $permission) {
-            $this->rbacService->assignDataScopeToPermission($permission, $personalDataScope);
+            AssignDataScopeToPermission::handle(['data_scope_id' => $personalDataScope->id], $permission->id);
         }
 
         // 订单权限使用部门数据范围
         $orderPermissions = Permission::where('resource', 'Order')->get();
         foreach ($orderPermissions as $permission) {
-            $this->rbacService->assignDataScopeToPermission($permission, $deptDataScope);
+            AssignDataScopeToPermission::handle(['data_scope_id' => $deptDataScope->id], $permission->id);
         }
 
         // 系统权限使用全部数据范围
         $systemPermissions = Permission::whereIn('resource', ['Setting', 'Log', 'System'])->get();
         foreach ($systemPermissions as $permission) {
-            $this->rbacService->assignDataScopeToPermission($permission, $allDataScope);
+            AssignDataScopeToPermission::handle(['data_scope_id' => $allDataScope->id], $permission->id);
         }
     }
 

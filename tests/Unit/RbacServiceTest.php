@@ -13,6 +13,10 @@ use Rbac\Enums\DataScopeType;
 use Rbac\Enums\GuardType;
 use Rbac\Tests\TestCase;
 
+/**
+ * @deprecated 从 v2.0 开始，推荐使用 Action 模式
+ */
+
 class RbacServiceTest extends TestCase
 {
     use RefreshDatabase;

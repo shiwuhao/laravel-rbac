@@ -3,10 +3,13 @@
 namespace Rbac\Commands;
 
 use Illuminate\Console\Command;
-use Rbac\Services\RbacService;
 use Rbac\Enums\ActionType;
 use Rbac\Enums\GuardType;
 use Rbac\Enums\DataScopeType;
+use Rbac\Actions\Role\CreateRole;
+use Rbac\Actions\Permission\CreatePermission;
+use Rbac\Actions\DataScope\CreateDataScope;
+use Rbac\Actions\Role\AssignRolePermissions;
 
 /**
  * 快速填充基础RBAC数据命令
@@ -32,21 +35,11 @@ class QuickSeedCommand extends Command
     protected $description = '快速填充基础RBAC数据（角色、权限、数据范围）';
 
     /**
-     * RBAC 服务实例
-     *
-     * @var RbacService
-     */
-    protected RbacService $rbacService;
-
-    /**
      * 构造函数
-     *
-     * @param RbacService $rbacService
      */
-    public function __construct(RbacService $rbacService)
+    public function __construct()
     {
         parent::__construct();
-        $this->rbacService = $rbacService;
     }
 
     /**
@@ -105,12 +98,12 @@ class QuickSeedCommand extends Command
 
         $createdRoles = [];
         foreach ($roles as $role) {
-            $createdRoles[] = $this->rbacService->createRole(
-                $role['name'],
-                $role['slug'],
-                $role['description'],
-                GuardType::WEB
-            );
+            $createdRoles[] = CreateRole::handle([
+                'name' => $role['name'],
+                'slug' => $role['slug'],
+                'description' => $role['description'],
+                'guard_name' => GuardType::WEB->value
+            ]);
         }
 
         return $createdRoles;
@@ -127,14 +120,14 @@ class QuickSeedCommand extends Command
         $permissions = [];
         foreach ($resources as $resource) {
             foreach ($actions as $action) {
-                $permissions[] = $this->rbacService->createPermission(
-                    ucfirst($action->value) . ' ' . ucfirst($resource),
-                    $resource . '.' . $action->value,
-                    $resource,
-                    $action,
-                    ucfirst($action->value) . ' ' . ucfirst($resource) . ' permission',
-                    GuardType::WEB
-                );
+                $permissions[] = CreatePermission::handle([
+                    'name' => ucfirst($action->value) . ' ' . ucfirst($resource),
+                    'slug' => $resource . '.' . $action->value,
+                    'resource' => $resource,
+                    'action' => $action->value,
+                    'description' => ucfirst($action->value) . ' ' . ucfirst($resource) . ' permission',
+                    'guard_name' => GuardType::WEB->value
+                ]);
             }
         }
 
@@ -153,12 +146,12 @@ class QuickSeedCommand extends Command
 
         $createdScopes = [];
         foreach ($scopes as $scope) {
-            $createdScopes[] = $this->rbacService->createDataScope(
-                $scope['name'],
-                $scope['type'],
-                [],
-                $scope['name'] . '范围'
-            );
+            $createdScopes[] = CreateDataScope::handle([
+                'name' => $scope['name'],
+                'type' => $scope['type']->value,
+                'config' => [],
+                'description' => $scope['name'] . '范围'
+            ]);
         }
 
         return $createdScopes;
@@ -171,27 +164,24 @@ class QuickSeedCommand extends Command
     {
         // 超级管理员获得所有权限
         $superAdmin = collect($roles)->firstWhere('slug', 'super-admin');
-        foreach ($permissions as $permission) {
-            $this->rbacService->assignPermissionToRole($superAdmin, $permission);
-        }
+        $permissionIds = collect($permissions)->pluck('id')->toArray();
+        AssignRolePermissions::handle(['permission_ids' => $permissionIds, 'replace' => true], $superAdmin->id);
 
         // 管理员获得用户相关权限
         $admin = collect($roles)->firstWhere('slug', 'admin');
         $adminPermissions = collect($permissions)->filter(function ($permission) {
             return $permission->resource === 'user';
         });
-        foreach ($adminPermissions as $permission) {
-            $this->rbacService->assignPermissionToRole($admin, $permission);
-        }
+        $adminPermissionIds = $adminPermissions->pluck('id')->toArray();
+        AssignRolePermissions::handle(['permission_ids' => $adminPermissionIds, 'replace' => true], $admin->id);
 
         // 普通用户只有查看权限
         $user = collect($roles)->firstWhere('slug', 'user');
         $userPermissions = collect($permissions)->filter(function ($permission) {
             return $permission->action === 'view';
         });
-        foreach ($userPermissions as $permission) {
-            $this->rbacService->assignPermissionToRole($user, $permission);
-        }
+        $userPermissionIds = $userPermissions->pluck('id')->toArray();
+        AssignRolePermissions::handle(['permission_ids' => $userPermissionIds, 'replace' => true], $user->id);
     }
 
     /**
@@ -200,27 +190,27 @@ class QuickSeedCommand extends Command
     protected function createDemoData(): void
     {
         // 创建更多角色
-        $this->rbacService->createRole('编辑', 'editor', '内容编辑', GuardType::WEB);
-        $this->rbacService->createRole('访客', 'guest', '访客用户', GuardType::WEB);
+        CreateRole::handle(['name' => '编辑', 'slug' => 'editor', 'description' => '内容编辑', 'guard_name' => GuardType::WEB->value]);
+        CreateRole::handle(['name' => '访客', 'slug' => 'guest', 'description' => '访客用户', 'guard_name' => GuardType::WEB->value]);
 
         // 创建更多权限
-        $this->rbacService->createPermission(
-            '导出数据',
-            'data.export',
-            'data',
-            ActionType::VIEW,
-            '导出系统数据',
-            GuardType::WEB
-        );
+        CreatePermission::handle([
+            'name' => '导出数据',
+            'slug' => 'data.export',
+            'resource' => 'data',
+            'action' => ActionType::VIEW->value,
+            'description' => '导出系统数据',
+            'guard_name' => GuardType::WEB->value
+        ]);
 
-        $this->rbacService->createPermission(
-            '系统设置',
-            'system.setting',
-            'system',
-            ActionType::UPDATE,
-            '修改系统设置',
-            GuardType::WEB
-        );
+        CreatePermission::handle([
+            'name' => '系统设置',
+            'slug' => 'system.setting',
+            'resource' => 'system',
+            'action' => ActionType::UPDATE->value,
+            'description' => '修改系统设置',
+            'guard_name' => GuardType::WEB->value
+        ]);
     }
 
     /**

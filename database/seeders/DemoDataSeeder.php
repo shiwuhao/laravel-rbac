@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Hash;
 use Rbac\Models\Role;
 use Rbac\Models\Permission;
 use Rbac\Models\DataScope;
-use Rbac\Services\RbacService;
+use Rbac\Actions\UserPermission\AssignRoleToUser;
+use Rbac\Actions\UserPermission\AssignPermissionToUser;
+use Rbac\Actions\UserPermission\AssignDataScopeToUser;
 
 /**
  * 演示数据填充器
@@ -15,12 +17,6 @@ use Rbac\Services\RbacService;
  */
 class DemoDataSeeder extends Seeder
 {
-    protected RbacService $rbacService;
-
-    public function __construct()
-    {
-        $this->rbacService = app(RbacService::class);
-    }
 
     /**
      * 运行数据填充
@@ -159,7 +155,7 @@ class DemoDataSeeder extends Seeder
             $role = Role::where('slug', $roleSlug)->first();
             
             if ($user && $role) {
-                $this->rbacService->assignRoleToUser($user, $role);
+                AssignRoleToUser::handle(['role_id' => $role->id], $user->id);
             }
         }
     }
@@ -177,21 +173,21 @@ class DemoDataSeeder extends Seeder
         $editor = $userModel::where('email', 'editor@example.com')->first();
         $fileManagePermission = Permission::where('slug', 'file.manage')->first();
         if ($editor && $fileManagePermission) {
-            $this->rbacService->assignPermissionToUser($editor, $fileManagePermission);
+            AssignPermissionToUser::handle(['permission_id' => $fileManagePermission->id], $editor->id);
         }
 
         // 给作者用户额外的文件上传权限
         $author = $userModel::where('email', 'author@example.com')->first();
         $fileCreatePermission = Permission::where('slug', 'file.create')->first();
         if ($author && $fileCreatePermission) {
-            $this->rbacService->assignPermissionToUser($author, $fileCreatePermission);
+            AssignPermissionToUser::handle(['permission_id' => $fileCreatePermission->id], $author->id);
         }
 
         // 给客服用户额外的用户查看权限
         $support = $userModel::where('email', 'support@example.com')->first();
         $userViewPermission = Permission::where('slug', 'user.view')->first();
         if ($support && $userViewPermission) {
-            $this->rbacService->assignPermissionToUser($support, $userViewPermission);
+            AssignPermissionToUser::handle(['permission_id' => $userViewPermission->id], $support->id);
         }
     }
 
@@ -208,28 +204,28 @@ class DemoDataSeeder extends Seeder
         $admin = $userModel::where('email', 'admin@example.com')->first();
         $orgDataScope = DataScope::where('type', 'organization')->first();
         if ($admin && $orgDataScope) {
-            $this->rbacService->assignDataScopeToUser($admin, $orgDataScope);
+            AssignDataScopeToUser::handle(['data_scope_id' => $orgDataScope->id], $admin->id);
         }
 
         // 给编辑分配部门数据范围
         $editor = $userModel::where('email', 'editor@example.com')->first();
         $deptDataScope = DataScope::where('type', 'department')->first();
         if ($editor && $deptDataScope) {
-            $this->rbacService->assignDataScopeToUser($editor, $deptDataScope);
+            AssignDataScopeToUser::handle(['data_scope_id' => $deptDataScope->id], $editor->id);
         }
 
         // 给作者分配个人数据范围
         $author = $userModel::where('email', 'author@example.com')->first();
         $personalDataScope = DataScope::where('type', 'personal')->first();
         if ($author && $personalDataScope) {
-            $this->rbacService->assignDataScopeToUser($author, $personalDataScope);
+            AssignDataScopeToUser::handle(['data_scope_id' => $personalDataScope->id], $author->id);
         }
 
         // 给财务分配自定义数据范围
         $finance = $userModel::where('email', 'finance@example.com')->first();
         $customDataScope = DataScope::where('type', 'custom')->first();
         if ($finance && $customDataScope) {
-            $this->rbacService->assignDataScopeToUser($finance, $customDataScope);
+            AssignDataScopeToUser::handle(['data_scope_id' => $customDataScope->id], $finance->id);
         }
     }
 }

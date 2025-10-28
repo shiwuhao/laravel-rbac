@@ -15,6 +15,8 @@ use Rbac\Enums\GuardType;
  * RBAC 核心服务类
  * 
  * 提供完整的 RBAC 功能管理接口
+ * 
+ * @deprecated 从 v2.0 开始，推荐使用 Action 模式替代
  */
 class RbacService
 {

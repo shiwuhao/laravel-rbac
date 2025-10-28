@@ -13,7 +13,7 @@ use Rbac\Contracts\PermissionContract;
 
 /**
  * 权限模型
- * 
+ *
  * @property int $id
  * @property string $name
  * @property string $slug
@@ -25,7 +25,7 @@ use Rbac\Contracts\PermissionContract;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
- * 
+ *
  * @property-read string $resource_type 资源类型(访问器别名)
  * @property-read string $operation 操作(访问器别名)
  */
@@ -41,6 +41,9 @@ class Permission extends Model implements PermissionContract
         'action',
         'guard_name',
         'metadata',
+        'resource_type',
+        'resource_id',
+        'operation',
     ];
 
     protected $casts = [
@@ -203,7 +206,7 @@ class Permission extends Model implements PermissionContract
     {
         return $query->whereIn('action', [
             'create',
-            'update', 
+            'update',
             'delete',
             'import',
         ]);
@@ -245,14 +248,14 @@ class Permission extends Model implements PermissionContract
             'export' => '导出',
             'import' => '导入',
         ];
-        
+
         $operationLabel = $operationLabels[$operation] ?? $operation;
         $name = $operationLabel . $resourceType;
-        
+
         if ($resourceId !== null) {
             $name .= "(#{$resourceId})";
         }
-        
+
         return $name;
     }
 
@@ -288,23 +291,23 @@ class Permission extends Model implements PermissionContract
         if ($this->description) {
             return $this->description;
         }
-        
+
         $operationLabels = [
             'view' => '查看',
-            'create' => '创建', 
+            'create' => '创建',
             'update' => '编辑',
             'delete' => '删除',
             'export' => '导出',
             'import' => '导入',
         ];
-        
+
         $operationLabel = $operationLabels[$this->action] ?? $this->action;
         $desc = $operationLabel . ' - ' . $this->resource;
-        
+
         if ($this->resource_id) {
             $desc .= "(#{$this->resource_id})";
         }
-        
+
         return $desc;
     }
 

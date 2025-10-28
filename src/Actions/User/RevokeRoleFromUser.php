@@ -9,8 +9,8 @@ use Rbac\Attributes\PermissionGroup;
 use Rbac\Models\Role;
 
 #[PermissionGroup('user:*', '用户管理')]
-#[Permission('user:revoke-role', '撤销用户角色')]
-class RevokeRole extends BaseAction
+#[Permission('user:revoke-role', '从用户撤销角色')]
+class RevokeRoleFromUser extends BaseAction
 {
     /**
      * 验证规则

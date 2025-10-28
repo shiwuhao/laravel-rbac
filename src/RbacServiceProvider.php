@@ -33,6 +33,7 @@ class RbacServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/rbac.php', 'rbac');
 
         // 注册核心服务
+        // @deprecated 从 v2.0 开始，推荐使用 Action 模式
         $this->app->singleton(RbacService::class, function ($app) {
             return new RbacService();
         });

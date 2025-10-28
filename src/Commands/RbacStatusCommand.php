@@ -3,7 +3,7 @@
 namespace Rbac\Commands;
 
 use Illuminate\Console\Command;
-use Rbac\Services\RbacService;
+use Rbac\Actions\Permission\GetPermissionStats;
 
 /**
  * RBAC 状态命令
@@ -24,14 +24,6 @@ class RbacStatusCommand extends Command
      */
     protected $description = '显示 RBAC 系统状态和统计信息';
 
-    protected RbacService $rbacService;
-
-    public function __construct(RbacService $rbacService)
-    {
-        parent::__construct();
-        $this->rbacService = $rbacService;
-    }
-
     /**
      * Execute the console command.
      */
@@ -41,7 +33,7 @@ class RbacStatusCommand extends Command
             $this->info('=== RBAC 系统状态 ===');
 
             // 获取统计信息
-            $stats = $this->rbacService->getPermissionStats();
+            $stats = GetPermissionStats::handle();
 
             $this->displayOverallStats($stats);
             $this->displayResourceStats($stats);

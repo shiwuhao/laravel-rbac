@@ -3,7 +3,7 @@
 namespace Rbac\Commands;
 
 use Illuminate\Console\Command;
-use Rbac\Services\RbacService;
+use Rbac\Actions\Permission\ClearAllCache;
 
 /**
  * 清理缓存命令
@@ -24,14 +24,6 @@ class ClearCacheCommand extends Command
      */
     protected $description = '清理 RBAC 系统缓存';
 
-    protected RbacService $rbacService;
-
-    public function __construct(RbacService $rbacService)
-    {
-        parent::__construct();
-        $this->rbacService = $rbacService;
-    }
-
     /**
      * Execute the console command.
      */
@@ -40,7 +32,7 @@ class ClearCacheCommand extends Command
         try {
             $this->info('清理 RBAC 缓存...');
             
-            $this->rbacService->clearAllCache();
+            ClearAllCache::handle();
             
             $this->info('RBAC 缓存清理完成！');
 

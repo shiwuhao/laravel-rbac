@@ -9,8 +9,8 @@ use Rbac\Attributes\PermissionGroup;
 use Rbac\Models\Role;
 
 #[PermissionGroup('user:*', '用户管理')]
-#[Permission('user:assign-roles', '分配用户角色')]
-class AssignUserRoles extends BaseAction
+#[Permission('user:assign-roles', '分配角色给用户')]
+class AssignRolesToUser extends BaseAction
 {
     /**
      * 验证规则
