@@ -18,9 +18,10 @@ class SyncRolesToUser extends BaseAction
      */
     protected function rules(): array
     {
+        $roleTable = config('rbac.tables.roles');
         return [
             'role_ids' => 'required|array',
-            'role_ids.*' => 'exists:rbac_roles,id',
+            'role_ids.*' => "exists:{$roleTable},id",
         ];
     }
 
@@ -29,11 +30,11 @@ class SyncRolesToUser extends BaseAction
      *
      * @return mixed
      * @throws \Exception
-     * 
+     *
      * @example
      * // 静态调用方式
      * SyncRolesToUser::handle(['role_ids' => [1, 2, 3]], $userId);
-     * 
+     *
      * // 实例调用方式
      * $action = new SyncRolesToUser();
      * $action(['role_ids' => [1, 2, 3]], $userId);
@@ -41,26 +42,11 @@ class SyncRolesToUser extends BaseAction
     protected function execute(): mixed
     {
         $userId = $this->context->id();
-        $userModel = config('rbac.models.user');
-        $user = $userModel::findOrFail($userId);
-
         $roleIds = $this->context->data('role_ids');
 
-        // 验证角色是否都存在
-        $roles = Role::whereIn('id', $roleIds)->get();
-
-        if ($roles->count() !== count($roleIds)) {
-            throw new \Exception('部分角色不存在');
-        }
-
-        // 完全替换用户的角色集合
-        $user->roles()->sync($roleIds);
-
-        // 清除用户缓存
-        if (method_exists($user, 'forgetCachedPermissions')) {
-            $user->forgetCachedPermissions();
-        }
-
-        return $user->load('roles');
+        return AssignRolesToUser::handle([
+            'role_ids' => $roleIds,
+            'replace' => true,
+        ], $userId);
     }
 }

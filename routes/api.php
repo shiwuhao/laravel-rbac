@@ -1,10 +1,16 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Rbac\Actions\Role\{AssignRolePermissions, CreateRole, DeleteRole, ListRole, ShowRole, UpdateRole};
-use Rbac\Actions\Permission\{BatchCreatePermissions, CreateInstancePermission, CreatePermission, DeletePermission, ListPermission, ShowPermission, UpdatePermission};
 use Rbac\Actions\DataScope\{CreateDataScope, DeleteDataScope, ListDataScope, ShowDataScope, UpdateDataScope};
-use Rbac\Actions\User\{AssignRoleToUser, RevokeRoleFromUser};
+use Rbac\Actions\Permission\{BatchCreatePermissions,
+    CreateInstancePermission,
+    CreatePermission,
+    DeletePermission,
+    ListPermission,
+    ShowPermission,
+    UpdatePermission};
+use Rbac\Actions\Role\{AssignRolePermissions, CreateRole, DeleteRole, ListRole, ShowRole, UpdateRole};
+use Rbac\Actions\UserPermission\{RevokeRoleFromUser};
 use Rbac\Actions\UserPermission\{AssignRolesToUser, GetUserPermissions, ListUserPermissions};
 
 // Role 路由
@@ -39,13 +45,10 @@ Route::prefix('data-scopes')->name('data-scopes.')->group(function () {
 
 // User 路由
 Route::prefix('users/{user_id}')->name('users.')->group(function () {
-    // 单个角色分配/撤销
-    Route::post('/roles', AssignRoleToUser::class)->name('assign-role');
-    Route::delete('/roles', RevokeRoleFromUser::class)->name('revoke-role');
-    
-    // 批量角色分配
-    Route::post('/roles/batch', AssignRolesToUser::class)->name('assign-roles');
-    
+    // 批量角色分配/撤销
+    Route::post('/roles', AssignRolesToUser::class)->name('assign-roles');
+    Route::delete('/roles', RevokeRoleFromUser::class)->name('revoke-roles');
+
     // 用户权限查询
     Route::get('/permissions', GetUserPermissions::class)->name('permissions');
 });

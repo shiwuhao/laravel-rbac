@@ -638,8 +638,7 @@ $managerUser->assignDataScope($teamCustomers);  // 可以看团队的客户
 #### 分配角色
 
 ```php
-use Rbac\Actions\User\AssignRoleToUser;
-use Rbac\Actions\User\RevokeRoleFromUser;
+use Rbac\Actions\User\AssignRoleToUser;use Rbac\Actions\UserPermission\RevokeRoleFromUser;
 
 // 分配单个角色
 AssignRoleToUser::handle([

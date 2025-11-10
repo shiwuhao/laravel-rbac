@@ -15,7 +15,7 @@ use Rbac\Actions\Permission\CreatePermission;
 use Rbac\Actions\Role\CreateRole;
 use Rbac\Actions\Role\AssignRolePermissions;
 use Rbac\Actions\Permission\AssignDataScopeToPermission;
-use Rbac\Actions\UserPermission\AssignRoleToUser;
+use Rbac\Actions\UserPermission\AssignRolesToUser;
 
 /**
  * 填充RBAC测试数据命令
@@ -450,7 +450,7 @@ class SeedTestDataCommand extends Command
             if (isset($roleMap[$user->email])) {
                 $role = collect($roles)->firstWhere('slug', $roleMap[$user->email]);
                 if ($role) {
-                    AssignRoleToUser::handle(['role_id' => $role->id], $user->id);
+                    AssignRolesToUser::handle(['role_ids' => [$role->id], 'replace' => false], $user->id);
                 }
             }
         }
