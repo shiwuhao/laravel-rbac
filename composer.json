@@ -57,9 +57,7 @@
             "providers": [
                 "Rbac\\RbacServiceProvider"
             ],
-            "aliases": {
-                "Rbac": "Rbac\\Facades\\Rbac"
-            }
+            "aliases": {}
         }
     },
     "config": {

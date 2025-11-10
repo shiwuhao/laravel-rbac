@@ -2,10 +2,14 @@
 
 namespace Rbac;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Blade;
-use Rbac\Services\RbacService;
+use Rbac\Commands\InitPackagePermissionsCommand;
+use Rbac\Commands\ListPermissionsCommand;
+use Rbac\Commands\ScanPermissionAnnotationsCommand;
+use Rbac\Commands\SyncPermissionsFromRoutesCommand;
 use Rbac\Services\RoutePermissionService;
 use Rbac\Commands\CreateRoleCommand;
 use Rbac\Commands\CreatePermissionCommand;
@@ -33,18 +37,8 @@ class RbacServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/rbac.php', 'rbac');
 
         // 注册核心服务
-        // @deprecated 从 v2.0 开始，推荐使用 Action 模式
-        $this->app->singleton(RbacService::class, function ($app) {
-            return new RbacService();
-        });
-
         $this->app->singleton(RoutePermissionService::class, function ($app) {
-            return new RoutePermissionService($app->make(RbacService::class));
-        });
-
-        // 注册门面
-        $this->app->singleton('rbac', function ($app) {
-            return $app->make(RbacService::class);
+            return new RoutePermissionService();
         });
     }
 
@@ -97,10 +91,10 @@ class RbacServiceProvider extends ServiceProvider
                 InstallCommand::class,
                 SeedTestDataCommand::class,
                 QuickSeedCommand::class,
-                \Rbac\Commands\ScanPermissionAnnotationsCommand::class,
-                \Rbac\Commands\SyncPermissionsFromRoutesCommand::class,
-                \Rbac\Commands\InitPackagePermissionsCommand::class,
-                \Rbac\Commands\ListPermissionsCommand::class,
+                ScanPermissionAnnotationsCommand::class,
+                SyncPermissionsFromRoutesCommand::class,
+                InitPackagePermissionsCommand::class,
+                ListPermissionsCommand::class,
             ]);
         }
 
@@ -126,8 +120,8 @@ class RbacServiceProvider extends ServiceProvider
     protected function loadApiRoutes(): void
     {
         $config = config('rbac.api', []);
-        
-        \Illuminate\Support\Facades\Route::middleware($config['middleware'] ?? ['api', 'auth:sanctum'])
+
+        Route::middleware($config['middleware'] ?? ['api', 'auth:sanctum'])
             ->prefix($config['prefix'] ?? 'api/rbac')
             ->name($config['name_prefix'] ?? 'rbac.api.')
             ->group(__DIR__.'/../routes/api.php');
@@ -248,7 +242,6 @@ class RbacServiceProvider extends ServiceProvider
     public function provides(): array
     {
         return [
-            RbacService::class,
             RoutePermissionService::class,
             'rbac',
         ];

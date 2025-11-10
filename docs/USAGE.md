@@ -91,8 +91,10 @@ php artisan rbac:quick-seed
 
 **示例：**
 ```php
+use Rbac\Actions\Role\CreateRole;
+
 // 创建管理员角色
-$adminRole = Role::create([
+$adminRole = CreateRole::handle([
     'name' => '系统管理员',
     'slug' => 'admin',
     'description' => '拥有系统所有权限',
@@ -107,8 +109,10 @@ $adminRole = Role::create([
 
 **示例：**
 ```php
+use Rbac\Actions\Permission\CreatePermission;
+
 // 创建用户管理权限
-$permission = Permission::create([
+$permission = CreatePermission::handle([
     'name' => '查看用户',
     'slug' => 'users.view',
     'resource' => 'users',
@@ -138,13 +142,6 @@ enum DataScopeType {
 Action 是一个独立的业务逻辑单元，替代传统的控制器方法：
 
 ```php
-// 传统方式
-class RoleController {
-    public function store(Request $request) {
-        // 验证、创建逻辑
-    }
-}
-
 // Action 方式
 class CreateRole extends BaseAction {
     protected function rules() { /* 验证规则 */ }
@@ -175,19 +172,23 @@ Route::post('/roles', CreateRole::class);
 **解决方案：**
 
 ```php
+use Rbac\Actions\Role\CreateRole;
+use Rbac\Actions\Permission\CreatePermission;
+use Rbac\Actions\DataScope\CreateDataScope;
+
 // 1. 创建角色
-$deptManager = Role::create([
+$deptManager = CreateRole::handle([
     'name' => '部门经理',
     'slug' => 'dept-manager',
 ]);
 
-$admin = Role::create([
+$admin = CreateRole::handle([
     'name' => '系统管理员', 
     'slug' => 'admin',
 ]);
 
 // 2. 创建权限
-$viewUsers = Permission::create([
+$viewUsers = CreatePermission::handle([
     'name' => '查看用户',
     'slug' => 'users.view',
     'resource' => 'users',
@@ -195,29 +196,38 @@ $viewUsers = Permission::create([
 ]);
 
 // 3. 创建数据范围
-$deptScope = DataScope::create([
+$deptScope = CreateDataScope::handle([
     'name' => '部门数据',
     'type' => DataScopeType::DEPARTMENT,
     'config' => ['field' => 'department_id'],
 ]);
 
-$allScope = DataScope::create([
+$allScope = CreateDataScope::handle([
     'name' => '全部数据',
     'type' => DataScopeType::ALL,
 ]);
 
 // 4. 关联权限和数据范围
-$viewUsers->dataScopes()->attach($deptScope);
-$viewUsers->dataScopes()->attach($allScope);
+use Rbac\Actions\Permission\AssignDataScopeToPermission;
+
+AssignDataScopeToPermission::handle([
+    'data_scope_id' => $deptScope->id,
+], $viewUsers->id);
+
+AssignDataScopeToPermission::handle([
+    'data_scope_id' => $allScope->id,
+], $viewUsers->id);
 
 // 5. 分配权限给角色
-$deptManager->permissions()->attach($viewUsers, [
-    'data_scope_id' => $deptScope->id
-]);
+use Rbac\Actions\Role\AssignRolePermissions;
 
-$admin->permissions()->attach($viewUsers, [
-    'data_scope_id' => $allScope->id
-]);
+AssignRolePermissions::handle([
+    'permission_ids' => [$viewUsers->id],
+], $deptManager->id);
+
+AssignRolePermissions::handle([
+    'permission_ids' => [$viewUsers->id],
+], $admin->id);
 
 // 6. 给用户分配角色
 $user1->assignRole($deptManager);  // 只能看部门数据
@@ -234,8 +244,10 @@ $user2->assignRole($admin);        // 可以看全部数据
 **解决方案：**
 
 ```php
+use Rbac\Actions\DataScope\CreateDataScope;
+
 // 1. 创建租户隔离的数据范围
-$tenantScope = DataScope::create([
+$tenantScope = CreateDataScope::handle([
     'name' => '租户数据隔离',
     'type' => DataScopeType::CUSTOM,
     'config' => [
@@ -246,9 +258,16 @@ $tenantScope = DataScope::create([
 ]);
 
 // 2. 为所有权限绑定租户范围
-Permission::all()->each(function ($permission) use ($tenantScope) {
-    $permission->dataScopes()->syncWithoutDetaching($tenantScope);
-});
+use Rbac\Actions\Permission\ListPermission;
+use Rbac\Actions\Permission\AssignDataScopeToPermission;
+
+$permissions = ListPermission::handle();
+
+foreach ($permissions as $permission) {
+    AssignDataScopeToPermission::handle([
+        'data_scope_id' => $tenantScope->id,
+    ], $permission->id);
+}
 
 // 3. 在查询时自动应用数据范围
 User::query()
@@ -266,20 +285,24 @@ User::query()
 **解决方案：**
 
 ```php
+use Rbac\Actions\Role\CreateRole;
+use Rbac\Actions\Permission\CreatePermission;
+use Rbac\Actions\DataScope\CreateDataScope;
+
 // 1. 创建角色
-$author = Role::create(['name' => '作者', 'slug' => 'author']);
-$editor = Role::create(['name' => '编辑', 'slug' => 'editor']);
-$admin = Role::create(['name' => '管理员', 'slug' => 'admin']);
+$author = CreateRole::handle(['name' => '作者', 'slug' => 'author']);
+$editor = CreateRole::handle(['name' => '编辑', 'slug' => 'editor']);
+$admin = CreateRole::handle(['name' => '管理员', 'slug' => 'admin']);
 
 // 2. 创建权限
-$editArticle = Permission::create([
+$editArticle = CreatePermission::handle([
     'slug' => 'articles.edit',
     'name' => '编辑文章',
     'resource' => 'articles',
     'action' => 'update',
 ]);
 
-$approveArticle = Permission::create([
+$approveArticle = CreatePermission::handle([
     'slug' => 'articles.approve',
     'name' => '审批文章',
     'resource' => 'articles',
@@ -287,23 +310,26 @@ $approveArticle = Permission::create([
 ]);
 
 // 3. 创建数据范围
-$personalScope = DataScope::create([
+$personalScope = CreateDataScope::handle([
     'name' => '个人文章',
     'type' => DataScopeType::PERSONAL,
     'config' => ['field' => 'author_id'],
 ]);
 
-$allScope = DataScope::create([
+$allScope = CreateDataScope::handle([
     'name' => '全部文章',
     'type' => DataScopeType::ALL,
 ]);
 
 // 4. 分配权限
-$author->givePermission($editArticle);
-$author->assignDataScope($personalScope);
+use Rbac\Actions\User\AssignRoleToUser;
 
-$editor->givePermission([$editArticle, $approveArticle]);
-$editor->assignDataScope($allScope);
+AssignRoleToUser::handle([
+    'role_id' => $author->id,
+], $userId);
+
+// 给用户分配数据范围
+$user->assignDataScope($personalScope);
 ```
 
 ### 场景 4：工单系统
@@ -316,6 +342,8 @@ $editor->assignDataScope($allScope);
 **解决方案：**
 
 ```php
+use Rbac\Actions\Permission\CreateInstancePermission;
+
 // 使用实例权限
 $ticket = Ticket::find(1);
 
@@ -345,29 +373,9 @@ Route::put('/tickets/{id}', UpdateTicket::class)
 #### 创建角色
 
 ```php
-use Rbac\Services\RbacService;
-
-$rbacService = app(RbacService::class);
-
-// 方式1：使用 Service
-$role = $rbacService->createRole(
-    name: '产品经理',
-    slug: 'product-manager',
-    description: '负责产品规划和管理',
-    guard: 'web'
-);
-
-// 方式2：使用 Model
-$role = Role::create([
-    'name' => '产品经理',
-    'slug' => 'product-manager',
-    'description' => '负责产品规划和管理',
-    'guard_name' => 'web',
-]);
-
-// 方式3：使用 Action
 use Rbac\Actions\Role\CreateRole;
 
+// 使用 Action
 $role = CreateRole::handle([
     'name' => '产品经理',
     'slug' => 'product-manager',
@@ -427,21 +435,19 @@ if ($role->hasAllPermissions(['users.view', 'users.create'])) {
 #### 创建权限
 
 ```php
-use Rbac\Services\RbacService;
+use Rbac\Actions\Permission\CreatePermission;
 use Rbac\Enums\ActionType;
 
-$rbacService = app(RbacService::class);
-
 // 创建单个权限
-$permission = $rbacService->createPermission(
-    name: '创建订单',
-    slug: 'orders.create',
-    resource: 'orders',
-    action: ActionType::CREATE,
-    description: '允许创建新订单',
-    guard: 'web',
-    metadata: ['group' => 'orders']
-);
+$permission = CreatePermission::handle([
+    'name' => '创建订单',
+    'slug' => 'orders.create',
+    'resource' => 'orders',
+    'action' => ActionType::CREATE,
+    'description' => '允许创建新订单',
+    'guard_name' => 'web',
+    'metadata' => ['group' => 'orders']
+]);
 ```
 
 #### 批量创建资源权限
@@ -476,17 +482,19 @@ $permission = CreateInstancePermission::handle([
 #### 权限查询
 
 ```php
+use Rbac\Actions\Permission\ListPermission;
+use Rbac\Actions\Permission\ShowPermission;
+
 // 获取所有权限
-$allPermissions = Permission::all();
+$allPermissions = ListPermission::handle();
 
 // 按资源查询
-$articlePermissions = Permission::where('resource', 'articles')->get();
+$articlePermissions = ListPermission::handle([
+    'resource' => 'articles',
+]);
 
-// 按slug查询
-$permission = Permission::where('slug', 'users.view')->first();
-
-// 使用 Service
-$permission = $rbacService->getPermissionBySlug('users.view');
+// 按ID查询
+$permission = ShowPermission::handle([], $permissionId);
 ```
 
 ### 数据权限
@@ -504,18 +512,18 @@ $permission = $rbacService->getPermissionBySlug('users.view');
 #### 创建数据范围
 
 ```php
-use Rbac\Models\DataScope;
+use Rbac\Actions\DataScope\CreateDataScope;
 use Rbac\Enums\DataScopeType;
 
 // 1. 全部数据范围
-$allScope = DataScope::create([
+$allScope = CreateDataScope::handle([
     'name' => '全部数据',
     'type' => DataScopeType::ALL,
     'description' => '可访问所有数据',
 ]);
 
 // 2. 部门数据范围
-$deptScope = DataScope::create([
+$deptScope = CreateDataScope::handle([
     'name' => '部门数据',
     'type' => DataScopeType::DEPARTMENT,
     'config' => [
@@ -527,7 +535,7 @@ $deptScope = DataScope::create([
 ]);
 
 // 3. 自定义数据范围
-$customScope = DataScope::create([
+$customScope = CreateDataScope::handle([
     'name' => '区域数据',
     'type' => DataScopeType::CUSTOM,
     'config' => [
@@ -545,9 +553,11 @@ $customScope = DataScope::create([
 $user->assignDataScope($deptScope, 'department_id = ?');
 
 // 2. 给权限绑定数据范围
-$permission->dataScopes()->attach($deptScope, [
-    'constraint' => 'department_id'
-]);
+use Rbac\Actions\Permission\AssignDataScopeToPermission;
+
+AssignDataScopeToPermission::handle([
+    'data_scope_id' => $deptScope->id,
+], $permissionId);
 
 // 3. 在查询中应用数据范围
 $query = Article::query();
@@ -563,42 +573,62 @@ $articles = $query->get();  // 自动过滤数据
 #### 数据范围实战示例
 
 ```php
+use Rbac\Actions\DataScope\CreateDataScope;
+use Rbac\Actions\Permission\CreatePermission;
+use Rbac\Actions\Role\CreateRole;
+
 // 场景：销售系统中的客户数据权限
 
 // 1. 创建数据范围
-$personalCustomers = DataScope::create([
+$personalCustomers = CreateDataScope::handle([
     'name' => '我的客户',
     'type' => DataScopeType::PERSONAL,
     'config' => ['field' => 'sales_id'],
 ]);
 
-$teamCustomers = DataScope::create([
+$teamCustomers = CreateDataScope::handle([
     'name' => '团队客户',
     'type' => DataScopeType::DEPARTMENT,
     'config' => ['field' => 'team_id'],
 ]);
 
 // 2. 创建权限并绑定数据范围
-$viewCustomers = Permission::create([
+$viewCustomers = CreatePermission::handle([
     'slug' => 'customers.view',
     'name' => '查看客户',
     'resource' => 'customers',
     'action' => 'view',
 ]);
 
-$viewCustomers->dataScopes()->attach([
-    $personalCustomers->id,
-    $teamCustomers->id,
-]);
+use Rbac\Actions\Permission\AssignDataScopeToPermission;
+
+AssignDataScopeToPermission::handle([
+    'data_scope_id' => $personalCustomers->id,
+], $viewCustomers->id);
+
+AssignDataScopeToPermission::handle([
+    'data_scope_id' => $teamCustomers->id,
+], $viewCustomers->id);
 
 // 3. 给不同角色分配不同的数据范围
-$salesRole = Role::create(['name' => '销售', 'slug' => 'sales']);
-$salesRole->givePermission($viewCustomers);
+$salesRole = CreateRole::handle(['name' => '销售', 'slug' => 'sales']);
+$managerRole = CreateRole::handle(['name' => '经理', 'slug' => 'manager']);
+
+// 分配权限给角色
+use Rbac\Actions\Role\AssignRolePermissions;
+
+AssignRolePermissions::handle([
+    'permission_ids' => [$viewCustomers->id],
+], $salesRole->id);
+
+AssignRolePermissions::handle([
+    'permission_ids' => [$viewCustomers->id],
+], $managerRole->id);
+
+// 给用户分配角色和数据范围
 $salesUser->assignRole($salesRole);
 $salesUser->assignDataScope($personalCustomers);  // 只能看自己的客户
 
-$managerRole = Role::create(['name' => '经理', 'slug' => 'manager']);
-$managerRole->givePermission($viewCustomers);
 $managerUser->assignRole($managerRole);
 $managerUser->assignDataScope($teamCustomers);  // 可以看团队的客户
 ```
@@ -608,18 +638,18 @@ $managerUser->assignDataScope($teamCustomers);  // 可以看团队的客户
 #### 分配角色
 
 ```php
-// 分配单个角色
-$user->assignRole('admin');
-$user->assignRole($adminRole);
+use Rbac\Actions\User\AssignRoleToUser;
+use Rbac\Actions\User\RevokeRoleFromUser;
 
-// 分配多个角色
-$user->assignRole(['admin', 'editor']);
+// 分配单个角色
+AssignRoleToUser::handle([
+    'role_id' => $roleId,
+], $userId);
 
 // 移除角色
-$user->removeRole('editor');
-
-// 同步角色（覆盖现有角色）
-$user->syncRoles(['admin']);
+RevokeRoleFromUser::handle([
+    'role_id' => $roleId,
+], $userId);
 ```
 
 #### 直接分配权限
@@ -1196,22 +1226,15 @@ class ArticleRepository {
 ### 4. 性能优化
 
 ```php
-// 1. 预加载关联关系
-$users = User::with(['roles.permissions', 'directPermissions'])->get();
+// 1. 启用权限缓存
+config(['rbac.cache.expiration_time' => DateInterval::createFromDateString('24 hours')]);
 
-// 2. 使用缓存
-$permissions = Cache::remember(
-    "user.{$userId}.permissions",
-    now()->addDay(),
-    fn() => $user->getAllPermissions()
-);
+// 2. 预加载关联
+$user->load(['roles.permissions', 'directPermissions']);
 
-// 3. 批量检查权限
-$hasPermissions = $user->hasAllPermissions([
-    'users.view',
-    'users.create',
-    'users.update',
-]);
+// 3. 使用数据库索引
+// 在迁移文件中添加索引
+$table->index(['resource', 'action']);
 ```
 
 ### 5. 测试权限
