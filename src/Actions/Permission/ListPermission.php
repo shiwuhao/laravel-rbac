@@ -24,15 +24,16 @@ class ListPermission extends BaseAction
             'action' => 'sometimes|string|max:50',
             'guard_name' => 'sometimes|string|max:50',
             'per_page' => 'sometimes|integer|min:15|max:50',
+            'format' => 'sometimes|string|in:list,tree',
         ];
     }
 
     /**
      * 获取权限列表
      *
-     * @return LengthAwarePaginator
+     * @return mixed
      */
-    protected function execute(): LengthAwarePaginator
+    protected function execute(): mixed
     {
         $permissionModel = config('rbac.models.permission');
         $query = $permissionModel::query()->withCount(['roles', 'users']);
@@ -57,6 +58,37 @@ class ListPermission extends BaseAction
             $query->where('guard_name', $this->context->data('guard_name'));
         }
 
+        // 树形展示
+        if ($this->context->data('format', 'list') === 'tree') {
+            $permissions = $query->orderBy('resource')->orderBy('action')->get();
+
+            $grouped = $permissions->groupBy('resource');
+
+            $tree = $grouped->map(function ($items, $resource) {
+                return [
+                    'key' => $resource ?: 'Unknown',
+                    'title' => $resource ?: '未分类资源',
+                    'children' => $items->map(function ($p) {
+                        return [
+                            'key' => $p->id,
+                            'title' => $p->name,
+                            'slug' => $p->slug,
+                            'action' => $p->action,
+                            'guard_name' => $p->guard_name,
+                            'roles_count' => $p->roles_count ?? 0,
+                            'users_count' => $p->users_count ?? 0,
+                            'is_instance' => !empty($p->resource_type) && !empty($p->resource_id),
+                            'resource_type' => $p->resource_type,
+                            'resource_id' => $p->resource_id,
+                        ];
+                    })->values()->all(),
+                ];
+            })->values()->all();
+
+            return $tree;
+        }
+
+        // 默认分页列表
         return $query->paginate($this->context->data('per_page', 15));
     }
 }
