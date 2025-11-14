@@ -6,7 +6,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
-use Rbac\Models\Role;
 
 #[PermissionGroup('role:*', '角色管理')]
 #[Permission('role:view', '查看角色')]
@@ -33,7 +32,8 @@ class ListRole extends BaseAction
      */
     protected function execute(): LengthAwarePaginator
     {
-        $query = Role::query();
+        $roleModel = config('rbac.models.role');
+        $query = $roleModel::query()->withCount(['permissions', 'users']);
 
         if ($this->context->has('keyword')) {
             $keyword = $this->context->data('keyword');

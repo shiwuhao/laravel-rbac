@@ -34,6 +34,10 @@ abstract class TestCase extends BaseTestCase
             'database' => ':memory:',
             'prefix'   => '',
         ]);
+
+        // 设置测试用户模型
+        $app['config']->set('rbac.models.user', \Rbac\Tests\Models\User::class);
+        $app['config']->set('auth.providers.users.model', \Rbac\Tests\Models\User::class);
     }
 
     /**

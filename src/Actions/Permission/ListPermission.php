@@ -6,7 +6,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
-use Rbac\Models\Permission;
 
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:view', '查看权限')]
@@ -21,8 +20,8 @@ class ListPermission extends BaseAction
     {
         return [
             'keyword' => 'sometimes|string',
-            'resource_type' => 'sometimes|string|max:100',
-            'operation' => 'sometimes|string|max:50',
+            'resource' => 'sometimes|string|max:100',
+            'action' => 'sometimes|string|max:50',
             'guard_name' => 'sometimes|string|max:50',
             'per_page' => 'sometimes|integer|min:15|max:50',
         ];
@@ -35,7 +34,8 @@ class ListPermission extends BaseAction
      */
     protected function execute(): LengthAwarePaginator
     {
-        $query = Permission::query();
+        $permissionModel = config('rbac.models.permission');
+        $query = $permissionModel::query()->withCount(['roles', 'users']);
 
         if ($this->context->has('keyword')) {
             $keyword = $this->context->data('keyword');
@@ -45,12 +45,12 @@ class ListPermission extends BaseAction
             });
         }
 
-        if ($this->context->has('resource_type')) {
-            $query->where('resource_type', $this->context->data('resource_type'));
+        if ($this->context->has('resource')) {
+            $query->where('resource', $this->context->data('resource'));
         }
 
-        if ($this->context->has('operation')) {
-            $query->where('operation', $this->context->data('operation'));
+        if ($this->context->has('action')) {
+            $query->where('action', $this->context->data('action'));
         }
 
         if ($this->context->has('guard_name')) {

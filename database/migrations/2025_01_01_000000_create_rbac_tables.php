@@ -36,6 +36,8 @@ return new class extends Migration
             $table->text('description')->nullable()->comment('权限描述');
             $table->string('resource', 100)->nullable()->comment('资源标识');
             $table->string('action', 50)->nullable()->comment('操作类型');
+            $table->string('resource_type', 100)->nullable()->comment('资源模型类型（多态）');
+            $table->unsignedBigInteger('resource_id')->nullable()->comment('资源实例ID（多态）');
             $table->string('guard_name', 50)->default('web')->comment('守卫名称');
             $table->json('metadata')->nullable()->comment('元数据');
             $table->timestamps();
@@ -43,6 +45,7 @@ return new class extends Migration
 
             $table->unique(['slug', 'guard_name']);
             $table->index(['resource', 'action']);
+            $table->index(['resource_type', 'resource_id'], 'idx_resource_instance');
             $table->index('guard_name');
         });
 
@@ -127,6 +130,26 @@ return new class extends Migration
             $table->primary(['permission_id', 'data_scope_id']);
         });
 
+        // 角色数据范围关联表
+        Schema::create($tables['role_data_scope'], function (Blueprint $table) use ($tables) {
+            $table->unsignedBigInteger('role_id');
+            $table->unsignedBigInteger('data_scope_id');
+            $table->text('constraint')->nullable()->comment('额外约束条件');
+            $table->timestamps();
+
+            $table->foreign('role_id')
+                ->references('id')
+                ->on($tables['roles'])
+                ->onDelete('cascade');
+
+            $table->foreign('data_scope_id')
+                ->references('id')
+                ->on($tables['data_scopes'])
+                ->onDelete('cascade');
+
+            $table->primary(['role_id', 'data_scope_id']);
+        });
+
         // 用户数据范围关联表
         Schema::create($tables['user_data_scope'], function (Blueprint $table) use ($tables) {
             $table->unsignedBigInteger('user_id');
@@ -152,6 +175,7 @@ return new class extends Migration
         $tables = config('rbac.tables');
 
         Schema::dropIfExists($tables['user_data_scope']);
+        Schema::dropIfExists($tables['role_data_scope']);
         Schema::dropIfExists($tables['permission_data_scope']);
         Schema::dropIfExists($tables['user_permission']);
         Schema::dropIfExists($tables['user_role']);

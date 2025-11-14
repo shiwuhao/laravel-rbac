@@ -17,6 +17,7 @@ return [
         'user_role' => 'user_role',
         'user_permission' => 'user_permission',
         'permission_data_scope' => 'permission_data_scope',
+        'role_data_scope' => 'role_data_scope',
         'user_data_scope' => 'user_data_scope',
     ],
 
@@ -57,6 +58,27 @@ return [
     |
     */
     'super_admin_role' => 'super-admin',
+
+    /*
+    |--------------------------------------------------------------------------
+    | 自定义操作类型
+    |--------------------------------------------------------------------------
+    |
+    | 在标准枚举之外，自定义的操作类型
+    | 格式：'action_key' => '中文标签'
+    |
+    | 标准操作（ActionType 枚举）：
+    | view, create, update, delete, export, import,
+    | manage, configure, approve, reject, access, share, edit
+    |
+    */
+    'custom_actions' => [
+        // 示例：
+        // 'download' => '下载',
+        // 'upload' => '上传',
+        // 'publish' => '发布',
+        // 'archive' => '归档',
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -158,6 +180,12 @@ return [
 
         // 数据范围缓存时间（秒）
         'cache_ttl' => 3600,
+
+        // 无有效范围时策略：deny（空结果）| ignore（不应用范围）
+        'empty_strategy' => 'deny',
+
+        // 组合模式：and（交集）| or（并集）
+        'mode' => 'and',
     ],
 
     /*

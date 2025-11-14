@@ -9,7 +9,9 @@ use Rbac\Models\Permission;
 /**
  * 创建权限命令
  * 
- * 用于手动创建单个权限节点
+ * 用于手动创建单个权限节点，支持自定义资源和操作类型
+ * 
+ * @example php artisan rbac:create-permission "查看用户" "user.view" --resource=user --action=view
  */
 class CreatePermissionCommand extends Command
 {
@@ -22,7 +24,7 @@ class CreatePermissionCommand extends Command
                             {name : 权限名称}
                             {slug : 权限标识符}
                             {--resource= : 资源类型}
-                            {--operation= : 操作类型}
+                            {--action= : 操作类型}
                             {--description= : 权限描述}
                             {--guard=web : 守卫名称}';
 
@@ -42,8 +44,8 @@ class CreatePermissionCommand extends Command
     {
         $name = $this->argument('name');
         $slug = $this->argument('slug');
-        $resourceType = $this->option('resource');
-        $operation = $this->option('operation');
+        $resource = $this->option('resource');
+        $action = $this->option('action');
         $description = $this->option('description');
         $guard = $this->option('guard');
 
@@ -58,20 +60,20 @@ class CreatePermissionCommand extends Command
             $permission = CreatePermission::handle([
                 'name' => $name,
                 'slug' => $slug,
-                'resource_type' => $resourceType,
-                'operation' => $operation,
+                'resource' => $resource,
+                'action' => $action,
                 'description' => $description,
                 'guard_name' => $guard,
             ]);
 
             $this->info("权限 '{$name}' 创建成功！");
-            $this->table(['ID', '名称', '标识符', '资源类型', '操作类型', '守卫'], [
+            $this->table(['ID', '名称', '标识符', '资源', '操作', '守卫'], [
                 [
                     $permission->id,
                     $permission->name,
                     $permission->slug,
-                    $permission->resource_type ?? '-',
-                    $permission->operation ?? '-',
+                    $permission->resource ?? '-',
+                    $permission->action ?? '-',
                     $permission->guard_name,
                 ]
             ]);

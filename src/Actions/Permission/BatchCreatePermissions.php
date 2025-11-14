@@ -6,7 +6,6 @@ use Illuminate\Support\Collection;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
-use Rbac\Models\Permission;
 
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:batch-create', '批量创建权限')]
@@ -20,9 +19,9 @@ class BatchCreatePermissions extends BaseAction
     protected function rules(): array
     {
         return [
-            'resource_type' => 'required|string|max:100',
-            'operations' => 'required|array|min:1',
-            'operations.*' => 'string|max:50',
+            'resource' => 'required|string|max:100',
+            'actions' => 'required|array|min:1',
+            'actions.*' => 'string|max:50',
             'guard_name' => 'sometimes|string|max:50',
         ];
     }
@@ -34,20 +33,21 @@ class BatchCreatePermissions extends BaseAction
      */
     protected function execute(): Collection
     {
+        $permissionModel = config('rbac.models.permission');
         $permissions = collect();
-        $resourceType = $this->context->data('resource_type');
-        $operations = $this->context->data('operations');
+        $resource = $this->context->data('resource');
+        $actions = $this->context->data('actions');
         $guardName = $this->context->data('guard_name', 'web');
 
-        foreach ($operations as $operation) {
-            $slug = Permission::generateSlug($resourceType, $operation);
-            $name = Permission::generateName($resourceType, $operation);
+        foreach ($actions as $action) {
+            $slug = $permissionModel::generateSlug($resource, $action);
+            $name = $permissionModel::generateName($resource, $action);
 
-            $permission = Permission::create([
+            $permission = $permissionModel::create([
                 'name' => $name,
                 'slug' => $slug,
-                'resource_type' => $resourceType,
-                'operation' => $operation,
+                'resource' => $resource,
+                'action' => $action,
                 'guard_name' => $guardName,
             ]);
 

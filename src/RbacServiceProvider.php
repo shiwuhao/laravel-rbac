@@ -6,20 +6,18 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Blade;
-use Rbac\Commands\InitPackagePermissionsCommand;
 use Rbac\Commands\ListPermissionsCommand;
-use Rbac\Commands\ScanPermissionAnnotationsCommand;
-use Rbac\Commands\SyncPermissionsFromRoutesCommand;
+use Rbac\Commands\ScanPermissionsCommand;
 use Rbac\Services\RoutePermissionService;
 use Rbac\Commands\CreateRoleCommand;
 use Rbac\Commands\CreatePermissionCommand;
-use Rbac\Commands\GenerateRoutePermissionsCommand;
 use Rbac\Commands\RbacStatusCommand;
 use Rbac\Commands\ClearCacheCommand;
 use Rbac\Commands\InstallCommand;
-use Rbac\Commands\SeedTestDataCommand;
+use Rbac\Commands\CleanOrphanedPermissionsCommand;
 use Rbac\Commands\QuickSeedCommand;
 use Rbac\Middleware\PermissionMiddleware;
+use Rbac\Middleware\PermissionCheckMiddleware;
 use Rbac\Middleware\RoleMiddleware;
 use Rbac\Middleware\DataScopeMiddleware;
 
@@ -64,7 +62,7 @@ class RbacServiceProvider extends ServiceProvider
 
         // 发布API路由文件
         $this->publishes([
-            __DIR__.'/../routes/api.php' => base_path('routes/rbac-api.php'),
+            __DIR__.'/../routes/rbac.php' => base_path('routes/rbac.php'),
         ], 'rbac-routes');
 
         // 发布Actions文件（可自定义业务逻辑）
@@ -85,16 +83,13 @@ class RbacServiceProvider extends ServiceProvider
             $this->commands([
                 CreateRoleCommand::class,
                 CreatePermissionCommand::class,
-                GenerateRoutePermissionsCommand::class,
                 RbacStatusCommand::class,
                 ClearCacheCommand::class,
                 InstallCommand::class,
-                SeedTestDataCommand::class,
                 QuickSeedCommand::class,
-                ScanPermissionAnnotationsCommand::class,
-                SyncPermissionsFromRoutesCommand::class,
-                InitPackagePermissionsCommand::class,
                 ListPermissionsCommand::class,
+                ScanPermissionsCommand::class,
+                CleanOrphanedPermissionsCommand::class,
             ]);
         }
 
@@ -108,7 +103,7 @@ class RbacServiceProvider extends ServiceProvider
         $this->registerBladeDirectives();
 
         // 注册模型观察者
-        $this->registerObservers();
+        // Deleted: registerObservers removed （采用清理命令替代，业务侧按需实现观察者）
 
         // 注册路由权限生成
         $this->registerRoutePermissionGeneration();
@@ -124,7 +119,7 @@ class RbacServiceProvider extends ServiceProvider
         Route::middleware($config['middleware'] ?? ['api', 'auth:sanctum'])
             ->prefix($config['prefix'] ?? 'api/rbac')
             ->name($config['name_prefix'] ?? 'rbac.api.')
-            ->group(__DIR__.'/../routes/api.php');
+            ->group(__DIR__.'/../routes/rbac.php');
     }
 
     /**
@@ -135,6 +130,7 @@ class RbacServiceProvider extends ServiceProvider
         $router = $this->app['router'];
 
         $router->aliasMiddleware('permission', PermissionMiddleware::class);
+        $router->aliasMiddleware('permission.check', PermissionCheckMiddleware::class);
         $router->aliasMiddleware('role', RoleMiddleware::class);
         $router->aliasMiddleware('data-scope', DataScopeMiddleware::class);
     }
@@ -201,18 +197,7 @@ class RbacServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * 注册模型观察者
-     */
-    protected function registerObservers(): void
-    {
-        // 如果启用了自动权限同步
-        if (config('rbac.auto_sync_permissions', false)) {
-            // 这里可以注册默认的观察者
-            // 具体的观察者需要在应用中手动注册
-        }
-    }
-
+    // Deleted: registerObservers() 方法已移除
     /**
      * 注册路由权限生成
      */
@@ -235,7 +220,6 @@ class RbacServiceProvider extends ServiceProvider
             });
         }
     }
-
     /**
      * 获取提供的服务
      */

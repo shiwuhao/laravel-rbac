@@ -8,7 +8,9 @@ use Rbac\Models\Permission;
 /**
  * 列出权限命令
  * 
- * 支持多种筛选条件查看权限列表
+ * 支持多种筛选条件查看权限列表，方便快速定位和管理权限
+ * 
+ * @example php artisan rbac:list-permissions --resource=user --limit=10
  */
 class ListPermissionsCommand extends Command
 {
@@ -19,7 +21,7 @@ class ListPermissionsCommand extends Command
      */
     protected $signature = 'rbac:list-permissions
                             {--resource= : 按资源类型筛选}
-                            {--operation= : 按操作类型筛选}
+                            {--action= : 按操作类型筛选}
                             {--guard= : 按守卫筛选}
                             {--search= : 搜索关键词}
                             {--limit=20 : 显示数量限制}';
@@ -42,11 +44,11 @@ class ListPermissionsCommand extends Command
 
         // 应用筛选条件
         if ($resource = $this->option('resource')) {
-            $query->where('resource_type', $resource);
+            $query->where('resource', $resource);
         }
 
-        if ($operation = $this->option('operation')) {
-            $query->where('operation', $operation);
+        if ($action = $this->option('action')) {
+            $query->where('action', $action);
         }
 
         if ($guard = $this->option('guard')) {
@@ -71,14 +73,14 @@ class ListPermissionsCommand extends Command
         $this->info("找到 {$permissions->count()} 个权限:");
         
         $this->table(
-            ['ID', '名称', '标识符', '资源类型', '操作', '守卫'],
+            ['ID', '名称', '标识符', '资源', '操作', '守卫'],
             $permissions->map(function ($permission) {
                 return [
                     $permission->id,
                     $permission->name,
                     $permission->slug,
-                    $permission->resource_type ?? '-',
-                    $permission->operation ?? '-',
+                    $permission->resource ?? '-',
+                    $permission->action ?? '-',
                     $permission->guard_name,
                 ];
             })->toArray()

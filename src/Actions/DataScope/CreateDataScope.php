@@ -2,10 +2,11 @@
 
 namespace Rbac\Actions\DataScope;
 
+use Illuminate\Database\Eloquent\Model;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
-use Rbac\Models\DataScope;
+use Rbac\Contracts\DataScopeContract;
 
 #[PermissionGroup('data-scope:*', '数据范围管理')]
 #[Permission('data-scope:create', '创建数据范围')]
@@ -21,7 +22,7 @@ class CreateDataScope extends BaseAction
         return [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
-            'type' => 'required|string|in:all,custom,department,department_and_sub,only_self',
+            'type' => 'required|string|in:all,organization,department,personal,custom',
             'config' => 'nullable|array',
         ];
     }
@@ -29,11 +30,13 @@ class CreateDataScope extends BaseAction
     /**
      * 创建数据范围
      *
-     * @return DataScope
+     * @return DataScopeContract&Model 返回配置的数据范围模型实例，默认为 \Rbac\Models\DataScope
      */
-    protected function execute(): DataScope
+    protected function execute(): DataScopeContract&Model
     {
-        return DataScope::create([
+        $dataScopeModel = config('rbac.models.data_scope');
+        
+        return $dataScopeModel::create([
             'name' => $this->context->data('name'),
             'description' => $this->context->data('description'),
             'type' => $this->context->data('type'),

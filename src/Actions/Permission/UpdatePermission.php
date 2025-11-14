@@ -2,11 +2,12 @@
 
 namespace Rbac\Actions\Permission;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
-use Rbac\Models\Permission;
+use Rbac\Contracts\PermissionContract;
 
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:update', '更新权限')]
@@ -20,6 +21,7 @@ class UpdatePermission extends BaseAction
     protected function rules(): array
     {
         $id = $this->context?->id();
+        $permissionTable = config('rbac.tables.permissions');
         
         return [
             'name' => 'sometimes|string|max:255',
@@ -27,12 +29,11 @@ class UpdatePermission extends BaseAction
                 'sometimes',
                 'string',
                 'max:255',
-                Rule::unique('rbac_permissions', 'slug')->ignore($id),
+                Rule::unique($permissionTable, 'slug')->ignore($id),
             ],
             'description' => 'nullable|string|max:500',
-            'resource_type' => 'sometimes|string|max:100',
-            'resource_id' => 'nullable|integer|min:1',
-            'operation' => 'sometimes|string|max:50',
+            'resource' => 'sometimes|string|max:100',
+            'action' => 'sometimes|string|max:50',
             'guard_name' => 'sometimes|string|max:50',
             'metadata' => 'nullable|array',
         ];
@@ -41,22 +42,31 @@ class UpdatePermission extends BaseAction
     /**
      * 更新权限
      *
-     * @return Permission
+     * @return PermissionContract&Model 返回配置的权限模型实例，默认为 \Rbac\Models\Permission
      */
-    protected function execute(): Permission
+    protected function execute(): PermissionContract&Model
     {
-        $permission = Permission::findOrFail($this->context->id());
+        $permissionModel = config('rbac.models.permission');
+        $permission = $permissionModel::findOrFail($this->context->id());
 
         $permission->update($this->context->only([
             'name',
             'slug',
             'description',
-            'resource_type',
-            'resource_id',
-            'operation',
+            'resource',
+            'action',
             'guard_name',
             'metadata',
         ]));
+
+        // 清除关联角色与用户的缓存
+        $permission->roles()->each(function ($role) {
+            $role->users()->each(function ($user) {
+                if (method_exists($user, 'forgetCachedPermissions')) {
+                    $user->forgetCachedPermissions();
+                }
+            });
+        });
 
         return $permission;
     }

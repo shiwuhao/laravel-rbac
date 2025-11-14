@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Collection;
 use Rbac\Enums\GuardType;
 use Rbac\Contracts\RoleContract;
+use Rbac\Contracts\PermissionContract;
 
 /**
  * 角色模型
@@ -74,9 +75,22 @@ class Role extends Model implements RoleContract
     }
 
     /**
+     * 数据范围关联
+     */
+    public function dataScopes(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            config('rbac.models.data_scope'),
+            config('rbac.tables.role_data_scope'),
+            'role_id',
+            'data_scope_id'
+        )->withPivot('constraint')->withTimestamps();
+    }
+
+    /**
      * 检查角色是否具有指定权限
      */
-    public function hasPermission(string|Permission $permission): bool
+    public function hasPermission(string|PermissionContract $permission): bool
     {
         if (is_string($permission)) {
             return $this->permissions()
@@ -122,12 +136,14 @@ class Role extends Model implements RoleContract
     /**
      * 分配权限给角色
      */
-    public function givePermission(string|array|Permission $permissions): self
+    public function givePermission(string|array|PermissionContract $permissions): self
     {
+        $permissionModel = config('rbac.models.permission');
+        
         $permissions = collect(\Arr::wrap($permissions))
-            ->map(function ($permission) {
+            ->map(function ($permission) use ($permissionModel) {
                 if (is_string($permission)) {
-                    return Permission::where('slug', $permission)->first();
+                    return $permissionModel::where('slug', $permission)->first();
                 }
                 return $permission;
             })
@@ -142,12 +158,14 @@ class Role extends Model implements RoleContract
     /**
      * 撤销角色权限
      */
-    public function revokePermission(string|array|Permission $permissions): self
+    public function revokePermission(string|array|PermissionContract $permissions): self
     {
+        $permissionModel = config('rbac.models.permission');
+        
         $permissions = collect(\Arr::wrap($permissions))
-            ->map(function ($permission) {
+            ->map(function ($permission) use ($permissionModel) {
                 if (is_string($permission)) {
-                    return Permission::where('slug', $permission)->first();
+                    return $permissionModel::where('slug', $permission)->first();
                 }
                 return $permission;
             })
@@ -164,12 +182,14 @@ class Role extends Model implements RoleContract
      */
     public function syncPermissions(array $permissions): self
     {
+        $permissionModel = config('rbac.models.permission');
+        
         $permissionIds = collect($permissions)
-            ->map(function ($permission) {
+            ->map(function ($permission) use ($permissionModel) {
                 if (is_string($permission)) {
-                    return Permission::where('slug', $permission)->first()?->id;
+                    return $permissionModel::where('slug', $permission)->first()?->id;
                 }
-                return $permission instanceof Permission ? $permission->id : $permission;
+                return $permission instanceof PermissionContract ? $permission->id : $permission;
             })
             ->filter();
 

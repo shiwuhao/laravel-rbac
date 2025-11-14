@@ -2,10 +2,11 @@
 
 namespace Rbac\Actions\Permission;
 
+use Illuminate\Database\Eloquent\Model;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
-use Rbac\Models\Permission;
+use Rbac\Contracts\PermissionContract;
 
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:create', '创建权限')]
@@ -34,11 +35,13 @@ class CreatePermission extends BaseAction
     /**
      * 创建权限
      *
-     * @return Permission
+     * @return PermissionContract&Model 返回配置的权限模型实例，默认为 \Rbac\Models\Permission
      */
-    protected function execute(): Permission
+    protected function execute(): PermissionContract&Model
     {
-        return Permission::create([
+        $permissionModel = config('rbac.models.permission');
+        
+        return $permissionModel::create([
             'name' => $this->context->data('name'),
             'slug' => $this->context->data('slug'),
             'description' => $this->context->data('description'),

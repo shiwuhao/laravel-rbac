@@ -2,11 +2,12 @@
 
 namespace Rbac\Actions\Role;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
-use Rbac\Models\Role;
+use Rbac\Contracts\RoleContract;
 
 #[PermissionGroup('role:*', '角色管理')]
 #[Permission('role:update', '更新角色')]
@@ -20,6 +21,7 @@ class UpdateRole extends BaseAction
     protected function rules(): array
     {
         $id = $this->context?->id();
+        $roleTable = config('rbac.tables.roles');
         
         return [
             'name' => 'sometimes|string|max:100',
@@ -27,7 +29,7 @@ class UpdateRole extends BaseAction
                 'sometimes',
                 'string',
                 'max:100',
-                Rule::unique('roles', 'slug')->ignore($id),
+                Rule::unique($roleTable, 'slug')->ignore($id),
             ],
             'description' => 'nullable|string',
             'guard_name' => 'sometimes|string|max:50',
@@ -37,11 +39,12 @@ class UpdateRole extends BaseAction
     /**
      * 更新角色
      *
-     * @return Role
+     * @return RoleContract&Model 返回配置的角色模型实例，默认为 \Rbac\Models\Role
      */
-    protected function execute(): Role
+    protected function execute(): RoleContract&Model
     {
-        $role = Role::findOrFail($this->context->id());
+        $roleModel = config('rbac.models.role');
+        $role = $roleModel::findOrFail($this->context->id());
 
         $role->update($this->context->only([
             'name',
