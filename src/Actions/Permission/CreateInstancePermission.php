@@ -9,12 +9,12 @@ use Rbac\Contracts\PermissionContract;
 
 /**
  * 创建实例级权限
- * 
+ *
  * 用于为具体模型实例创建权限，如：
  * - 报表权限：report:view#123（查看报表#123）
  * - 菜单权限：menu:access#456（访问菜单#456）
- * 
- * @example 
+ *
+ * @example
  * CreateInstancePermission::handle([
  *     'name' => '查看销售报表',
  *     'slug' => 'report:view:sales-2024',
@@ -33,7 +33,7 @@ class CreateInstancePermission extends BaseAction
     protected function rules(): array
     {
         $table = config('rbac.tables.permissions', 'permissions');
-        
+
         return [
             'name' => 'required|string|max:255',
             'slug' => "required|string|max:255|unique:{$table},slug",
@@ -53,7 +53,7 @@ class CreateInstancePermission extends BaseAction
     protected function execute(): PermissionContract&Model
     {
         $permissionModel = config('rbac.models.permission');
-        
+
         return $permissionModel::create([
             'name' => $this->context->data('name'),
             'slug' => $this->context->data('slug'),

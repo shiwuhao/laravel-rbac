@@ -8,6 +8,15 @@ use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 use Rbac\Contracts\DataScopeContract;
 
+/**
+ * 更新数据范围
+ *
+ * @example
+ * UpdateDataScope::handle([
+ *     'name' => '部门及下级数据',
+ *     'type' => 'department_and_sub',
+ * ], $dataScopeId);
+ */
 #[PermissionGroup('data-scope:*', '数据范围管理')]
 #[Permission('data-scope:update', '更新数据范围')]
 class UpdateDataScope extends BaseAction

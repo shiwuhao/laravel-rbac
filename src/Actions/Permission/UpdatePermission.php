@@ -9,6 +9,15 @@ use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
 use Rbac\Contracts\PermissionContract;
 
+/**
+ * 更新权限
+ *
+ * @example
+ * UpdatePermission::handle([
+ *     'name' => '编辑文章',
+ *     'description' => '允许编辑文章内容',
+ * ], $permissionId);
+ */
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:update', '更新权限')]
 class UpdatePermission extends BaseAction
@@ -22,7 +31,7 @@ class UpdatePermission extends BaseAction
     {
         $id = $this->context?->id();
         $permissionTable = config('rbac.tables.permissions');
-        
+
         return [
             'name' => 'sometimes|string|max:255',
             'slug' => [

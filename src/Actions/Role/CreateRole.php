@@ -8,6 +8,17 @@ use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 use Rbac\Contracts\RoleContract;
 
+/**
+ * 创建角色
+ *
+ * @example
+ * CreateRole::handle([
+ *     'name' => '系统管理员',
+ *     'slug' => 'admin',
+ *     'description' => '拥有系统所有权限',
+ *     'guard_name' => 'web',
+ * ]);
+ */
 #[PermissionGroup('role:*', '角色管理')]
 #[Permission('role:create', '创建角色', description: '创建新的系统角色')]
 class CreateRole extends BaseAction
@@ -20,6 +31,7 @@ class CreateRole extends BaseAction
     protected function rules(): array
     {
         $roleTable = config('rbac.tables.roles');
+
         return [
             'name' => 'required|string|max:100',
             'slug' => "required|string|max:100|unique:{$roleTable},slug",
@@ -36,7 +48,7 @@ class CreateRole extends BaseAction
     protected function execute(): RoleContract&Model
     {
         $roleModel = config('rbac.models.role');
-        
+
         return $roleModel::create([
             'name' => $this->context->data('name'),
             'slug' => $this->context->data('slug'),

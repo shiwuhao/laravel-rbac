@@ -316,20 +316,25 @@ Content-Type: application/json
 
 ---
 
-#### 撤销权限
+#### 撤销权限（批量）
 
 **使用 Action：**
 ```php
-use Rbac\Actions\Role\RevokePermissionFromRole;
+use Rbac\Actions\Role\RevokePermissionsFromRole;
 
-RevokePermissionFromRole::handle([
-    'permission_id' => 1,
+RevokePermissionsFromRole::handle([
+    'permission_ids' => [1, 2, 3],
 ], $roleId);
 ```
 
 **使用 API：**
 ```http
-DELETE /api/rbac/roles/{id}/permissions/{permission_id}
+DELETE /api/rbac/roles/{id}/permissions
+Content-Type: application/json
+
+{
+    "permission_ids": [1, 2, 3]
+}
 ```
 
 ---
@@ -388,20 +393,25 @@ Content-Type: application/json
 
 ---
 
-#### 撤销数据范围
+#### 撤销数据范围（批量）
 
 **使用 Action：**
 ```php
-use Rbac\Actions\Role\RevokeDataScopeFromRole;
+use Rbac\Actions\Role\RevokeDataScopesFromRole;
 
-RevokeDataScopeFromRole::handle([
-    'data_scope_id' => 1,
+RevokeDataScopesFromRole::handle([
+    'data_scope_ids' => [1, 2, 3],
 ], $roleId);
 ```
 
 **使用 API：**
 ```http
-DELETE /api/rbac/roles/{id}/data-scopes/{data_scope_id}
+DELETE /api/rbac/roles/{id}/data-scopes
+Content-Type: application/json
+
+{
+    "data_scope_ids": [1, 2, 3]
+}
 ```
 
 ---
@@ -889,16 +899,17 @@ Content-Type: application/json
 
 ### 撤销实例权限
 
-#### 撤销用户实例权限
+#### 撤销用户实例权限（批量）
 
 **使用 Action：**
 ```php
-use Rbac\Actions\User\RevokeInstancePermissionFromUser;
+use Rbac\Actions\User\RevokeInstancePermissionsFromUser;
 
-RevokeInstancePermissionFromUser::handle([
-    'resource' => 'article',
-    'resource_id' => 123,
-    'action' => 'update',
+RevokeInstancePermissionsFromUser::handle([
+    'permissions' => [
+        ['resource' => 'article', 'resource_id' => 123, 'action' => 'update'],
+        ['resource' => 'article', 'resource_id' => 124, 'action' => 'update'],
+    ],
 ], $userId);
 ```
 
@@ -908,24 +919,26 @@ DELETE /api/rbac/users/{user_id}/instance-permissions
 Content-Type: application/json
 
 {
-    "resource": "article",
-    "resource_id": 123,
-    "action": "update"
+    "permissions": [
+        {"resource": "article", "resource_id": 123, "action": "update"},
+        {"resource": "article", "resource_id": 124, "action": "update"}
+    ]
 }
 ```
 
 ---
 
-#### 撤销角色实例权限
+#### 撤销角色实例权限（批量）
 
 **使用 Action：**
 ```php
-use Rbac\Actions\Role\RevokeInstancePermissionFromRole;
+use Rbac\Actions\Role\RevokeInstancePermissionsFromRole;
 
-RevokeInstancePermissionFromRole::handle([
-    'resource' => 'project',
-    'resource_id' => 10,
-    'action' => 'manage',
+RevokeInstancePermissionsFromRole::handle([
+    'permissions' => [
+        ['resource' => 'project', 'resource_id' => 10, 'action' => 'manage'],
+        ['resource' => 'project', 'resource_id' => 11, 'action' => 'manage'],
+    ],
 ], $roleId);
 ```
 
@@ -935,9 +948,10 @@ DELETE /api/rbac/roles/{id}/instance-permissions
 Content-Type: application/json
 
 {
-    "resource": "project",
-    "resource_id": 10,
-    "action": "manage"
+    "permissions": [
+        {"resource": "project", "resource_id": 10, "action": "manage"},
+        {"resource": "project", "resource_id": 11, "action": "manage"}
+    ]
 }
 ```
 
@@ -1039,14 +1053,14 @@ Content-Type: application/json
 
 ---
 
-#### 撤销角色
+#### 撤销角色（批量）
 
 **使用 Action：**
 ```php
-use Rbac\Actions\User\RevokeRoleFromUser;
+use Rbac\Actions\User\RevokeRolesFromUser;
 
-RevokeRoleFromUser::handle([
-    'role_id' => 1,
+RevokeRolesFromUser::handle([
+    'role_ids' => [1, 2],
 ], $userId);
 ```
 
@@ -1056,7 +1070,7 @@ DELETE /api/rbac/users/{user_id}/roles
 Content-Type: application/json
 
 {
-    "role_id": 1
+    "role_ids": [1, 2]
 }
 ```
 
@@ -1112,14 +1126,14 @@ Content-Type: application/json
 
 ---
 
-#### 撤销权限
+#### 撤销权限（批量）
 
 **使用 Action：**
 ```php
-use Rbac\Actions\User\RevokePermissionFromUser;
+use Rbac\Actions\User\RevokePermissionsFromUser;
 
-RevokePermissionFromUser::handle([
-    'permission_id' => 1,
+RevokePermissionsFromUser::handle([
+    'permission_ids' => [1, 2, 3],
 ], $userId);
 ```
 
@@ -1129,7 +1143,7 @@ DELETE /api/rbac/users/{user_id}/permissions
 Content-Type: application/json
 
 {
-    "permission_id": 1
+    "permission_ids": [1, 2, 3]
 }
 ```
 
@@ -1189,14 +1203,14 @@ Content-Type: application/json
 
 ---
 
-#### 撤销数据范围
+#### 撤销数据范围（批量）
 
 **使用 Action：**
 ```php
-use Rbac\Actions\User\RevokeDataScopeFromUser;
+use Rbac\Actions\User\RevokeDataScopesFromUser;
 
-RevokeDataScopeFromUser::handle([
-    'data_scope_id' => 1,
+RevokeDataScopesFromUser::handle([
+    'data_scope_ids' => [1, 2, 3],
 ], $userId);
 ```
 
@@ -1206,7 +1220,7 @@ DELETE /api/rbac/users/{user_id}/data-scopes
 Content-Type: application/json
 
 {
-    "data_scope_id": 1
+    "data_scope_ids": [1, 2, 3]
 }
 ```
 
@@ -1412,13 +1426,13 @@ Route::post('/users', CreateUser::class)
 | PUT | `/roles/{id}` | 更新角色 |
 | DELETE | `/roles/{id}` | 删除角色 |
 | POST | `/roles/{id}/permissions` | 为角色分配权限 |
-| DELETE | `/roles/{id}/permissions/{permission_id}` | 撤销角色权限 |
+| DELETE | `/roles/{id}/permissions` | 撤销角色权限（批量） |
 | PUT | `/roles/{id}/permissions` | 同步角色权限 |
 | POST | `/roles/{id}/data-scopes` | 为角色分配数据范围 |
-| DELETE | `/roles/{id}/data-scopes/{data_scope_id}` | 撤销角色数据范围 |
+| DELETE | `/roles/{id}/data-scopes` | 撤销角色数据范围（批量） |
 | PUT | `/roles/{id}/data-scopes` | 同步角色数据范围 |
 | POST | `/roles/{id}/instance-permissions` | 为角色分配实例权限 |
-| DELETE | `/roles/{id}/instance-permissions` | 撤销角色实例权限 |
+| DELETE | `/roles/{id}/instance-permissions` | 撤销角色实例权限（批量） |
 
 ---
 
@@ -1453,15 +1467,15 @@ Route::post('/users', CreateUser::class)
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | POST | `/users/{user_id}/roles` | 为用户分配角色 |
-| DELETE | `/users/{user_id}/roles` | 撤销用户角色 |
+| DELETE | `/users/{user_id}/roles` | 撤销用户角色（批量） |
 | PUT | `/users/{user_id}/roles` | 同步用户角色 |
 | POST | `/users/{user_id}/permissions` | 为用户分配权限 |
-| DELETE | `/users/{user_id}/permissions` | 撤销用户权限 |
+| DELETE | `/users/{user_id}/permissions` | 撤销用户权限（批量） |
 | PUT | `/users/{user_id}/permissions` | 同步用户权限 |
 | POST | `/users/{user_id}/instance-permissions` | 为用户分配实例权限 |
-| DELETE | `/users/{user_id}/instance-permissions` | 撤销用户实例权限 |
+| DELETE | `/users/{user_id}/instance-permissions` | 撤销用户实例权限（批量） |
 | POST | `/users/{user_id}/data-scopes` | 为用户分配数据范围 |
-| DELETE | `/users/{user_id}/data-scopes` | 撤销用户数据范围 |
+| DELETE | `/users/{user_id}/data-scopes` | 撤销用户数据范围（批量） |
 | PUT | `/users/{user_id}/data-scopes` | 同步用户数据范围 |
 | GET | `/users/{user_id}/permissions` | 获取用户权限 |
 

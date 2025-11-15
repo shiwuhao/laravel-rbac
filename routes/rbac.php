@@ -13,9 +13,9 @@ use Rbac\Actions\Role\{
     AssignPermissionsToRole,
     AssignDataScopesToRole,
     AssignInstancePermissionToRole,
-    RevokePermissionFromRole,
-    RevokeDataScopeFromRole,
-    RevokeInstancePermissionFromRole,
+    RevokePermissionsFromRole,
+    RevokeDataScopesFromRole,
+    RevokeInstancePermissionsFromRole,
     SyncPermissionsToRole,
     SyncDataScopesToRole,
     CreateRole,
@@ -26,16 +26,16 @@ use Rbac\Actions\Role\{
 };
 use Rbac\Actions\User\{
     AssignRolesToUser,
-    RevokeRoleFromUser,
+    RevokeRolesFromUser,
     SyncRolesToUser,
     AssignPermissionsToUser,
-    RevokePermissionFromUser,
+    RevokePermissionsFromUser,
     SyncPermissionsToUser,
     AssignDataScopesToUser,
-    RevokeDataScopeFromUser,
+    RevokeDataScopesFromUser,
     SyncDataScopesToUser,
     AssignInstancePermissionToUser,
-    RevokeInstancePermissionFromUser,
+    RevokeInstancePermissionsFromUser,
     GetUserPermissions,
     ListUserPermissions
 };
@@ -47,19 +47,19 @@ Route::prefix('roles')->name('roles.')->middleware('permission.check')->group(fu
     Route::get('/{id}', ShowRole::class)->name('show');
     Route::put('/{id}', UpdateRole::class)->name('update');
     Route::delete('/{id}', DeleteRole::class)->name('destroy');
-    // 权限管理~
+    // 权限管理
     Route::post('/{id}/permissions', AssignPermissionsToRole::class)->name('assign-permissions');
-    Route::delete('/{id}/permissions/{permission_id}', RevokePermissionFromRole::class)->name('revoke-permission');
+    Route::delete('/{id}/permissions', RevokePermissionsFromRole::class)->name('revoke-permissions');
     Route::put('/{id}/permissions', SyncPermissionsToRole::class)->name('sync-permissions');
 
     // 数据范围管理
     Route::post('/{id}/data-scopes', AssignDataScopesToRole::class)->name('assign-data-scopes');
-    Route::delete('/{id}/data-scopes/{data_scope_id}', RevokeDataScopeFromRole::class)->name('revoke-data-scope');
+    Route::delete('/{id}/data-scopes', RevokeDataScopesFromRole::class)->name('revoke-data-scopes');
     Route::put('/{id}/data-scopes', SyncDataScopesToRole::class)->name('sync-data-scopes');
 
     // 实例权限管理（支持单个或批量）
     Route::post('/{id}/instance-permissions', AssignInstancePermissionToRole::class)->name('assign-instance-permissions');
-    Route::delete('/{id}/instance-permissions', RevokeInstancePermissionFromRole::class)->name('revoke-instance-permissions');
+    Route::delete('/{id}/instance-permissions', RevokeInstancePermissionsFromRole::class)->name('revoke-instance-permissions');
 });
 
 // Permission 路由
@@ -86,21 +86,21 @@ Route::prefix('data-scopes')->name('data-scopes.')->group(function () {
 Route::prefix('users/{user_id}')->name('users.')->group(function () {
     // 角色管理
     Route::post('/roles', AssignRolesToUser::class)->name('assign-roles');
-    Route::delete('/roles', RevokeRoleFromUser::class)->name('revoke-roles');
+    Route::delete('/roles', RevokeRolesFromUser::class)->name('revoke-roles');
     Route::put('/roles', SyncRolesToUser::class)->name('sync-roles');
 
     // 直接权限管理
     Route::post('/permissions', AssignPermissionsToUser::class)->name('assign-permissions');
-    Route::delete('/permissions', RevokePermissionFromUser::class)->name('revoke-permissions');
+    Route::delete('/permissions', RevokePermissionsFromUser::class)->name('revoke-permissions');
     Route::put('/permissions', SyncPermissionsToUser::class)->name('sync-permissions');
 
     // 实例权限管理（支持单个或批量）
     Route::post('/instance-permissions', AssignInstancePermissionToUser::class)->name('assign-instance-permissions');
-    Route::delete('/instance-permissions', RevokeInstancePermissionFromUser::class)->name('revoke-instance-permissions');
+    Route::delete('/instance-permissions', RevokeInstancePermissionsFromUser::class)->name('revoke-instance-permissions');
 
     // 数据范围管理
     Route::post('/data-scopes', AssignDataScopesToUser::class)->name('assign-data-scopes');
-    Route::delete('/data-scopes', RevokeDataScopeFromUser::class)->name('revoke-data-scopes');
+    Route::delete('/data-scopes', RevokeDataScopesFromUser::class)->name('revoke-data-scopes');
     Route::put('/data-scopes', SyncDataScopesToUser::class)->name('sync-data-scopes');
 
     // 权限查询

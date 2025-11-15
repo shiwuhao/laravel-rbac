@@ -8,6 +8,20 @@ use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
 use Rbac\Contracts\PermissionContract;
 
+/**
+ * 创建权限
+ *
+ * @example
+ * CreatePermission::handle([
+ *     'name' => '查看文章',
+ *     'slug' => 'article:view',
+ *     'description' => '允许查看文章列表',
+ *     'resource' => 'article',
+ *     'action' => 'view',
+ *     'guard_name' => 'web',
+ *     'metadata' => ['priority' => 1],
+ * ]);
+ */
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:create', '创建权限')]
 class CreatePermission extends BaseAction
@@ -20,7 +34,7 @@ class CreatePermission extends BaseAction
     protected function rules(): array
     {
         $table = config('rbac.tables.permissions', 'permissions');
-        
+
         return [
             'name' => 'required|string|max:255',
             'slug' => "required|string|max:255|unique:{$table},slug",
@@ -40,7 +54,7 @@ class CreatePermission extends BaseAction
     protected function execute(): PermissionContract&Model
     {
         $permissionModel = config('rbac.models.permission');
-        
+
         return $permissionModel::create([
             'name' => $this->context->data('name'),
             'slug' => $this->context->data('slug'),

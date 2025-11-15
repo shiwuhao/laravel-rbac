@@ -10,9 +10,9 @@ use Rbac\Contracts\RoleContract;
 
 /**
  * 为角色分配实例权限
- * 
+ *
  * 支持单个或批量分配
- * 
+ *
  * @example 单个分配
  * AssignInstancePermissionToRole::handle([
  *     'role_id' => 1,
@@ -20,7 +20,6 @@ use Rbac\Contracts\RoleContract;
  *     'resource_type' => 'App\Models\Report',
  *     'resource_id' => 123,
  * ]);
- * 
  * @example 批量分配
  * AssignInstancePermissionToRole::handle([
  *     'role_id' => 1,
@@ -39,15 +38,15 @@ class AssignInstancePermissionToRole extends BaseAction
     protected function rules(): array
     {
         $roleTable = config('rbac.tables.roles');
-        
+
         return [
             'role_id' => "required|exists:{$roleTable},id",
-            
+
             // 单个权限参数
             'permission_slug' => 'required_without:permissions|string',
             'resource_type' => 'required_without:permissions|string',
             'resource_id' => 'required_without:permissions|integer',
-            
+
             // 批量权限参数
             'permissions' => 'required_without:permission_slug|array|min:1',
             'permissions.*.slug' => 'required|string',
@@ -63,13 +62,13 @@ class AssignInstancePermissionToRole extends BaseAction
     {
         $roleModel = config('rbac.models.role');
         $permissionModel = config('rbac.models.permission');
-        
+
         $role = $roleModel::findOrFail($this->context->data('role_id'));
         $requestedPermissions = $this->normalizePermissions();
 
         return DB::transaction(function () use ($role, $permissionModel, $requestedPermissions) {
             $uniqueSlugs = collect($requestedPermissions)->pluck('slug')->unique()->values();
-            
+
             $basePermissions = $permissionModel::whereIn('slug', $uniqueSlugs)
                 ->whereNull('resource_type')
                 ->whereNull('resource_id')
@@ -83,7 +82,7 @@ class AssignInstancePermissionToRole extends BaseAction
                     'resource_id' => $item['resource_id'],
                 ];
             })->unique(function ($item) {
-                return $item['slug'] . '|' . $item['resource_type'] . '|' . $item['resource_id'];
+                return $item['slug'].'|'.$item['resource_type'].'|'.$item['resource_id'];
             })->values();
 
             $existingPermissions = $this->batchFindInstancePermissions(
@@ -93,17 +92,17 @@ class AssignInstancePermissionToRole extends BaseAction
 
             $toCreate = [];
             foreach ($instanceConditions as $condition) {
-                $key = $condition['slug'] . '|' . $condition['resource_type'] . '|' . $condition['resource_id'];
-                
-                if (!isset($existingPermissions[$key])) {
+                $key = $condition['slug'].'|'.$condition['resource_type'].'|'.$condition['resource_id'];
+
+                if (! isset($existingPermissions[$key])) {
                     $basePermission = $basePermissions[$condition['slug']] ?? null;
-                    
-                    if (!$basePermission) {
+
+                    if (! $basePermission) {
                         continue;
                     }
 
                     $toCreate[] = [
-                        'name' => $basePermission->name . ' #' . $condition['resource_id'],
+                        'name' => $basePermission->name.' #'.$condition['resource_id'],
                         'slug' => $condition['slug'],
                         'resource' => $basePermission->resource,
                         'action' => $basePermission->action,
@@ -117,9 +116,9 @@ class AssignInstancePermissionToRole extends BaseAction
                 }
             }
 
-            if (!empty($toCreate)) {
+            if (! empty($toCreate)) {
                 $permissionModel::insert($toCreate);
-                
+
                 $newlyCreated = $this->batchFindInstancePermissions(
                     $permissionModel,
                     $instanceConditions
@@ -160,7 +159,7 @@ class AssignInstancePermissionToRole extends BaseAction
         }
 
         $query = $permissionModel::query();
-        
+
         foreach ($conditions as $condition) {
             $query->orWhere(function ($q) use ($condition) {
                 $q->where('slug', $condition['slug'])
@@ -173,7 +172,7 @@ class AssignInstancePermissionToRole extends BaseAction
 
         $indexed = [];
         foreach ($permissions as $permission) {
-            $key = $permission->slug . '|' . $permission->resource_type . '|' . $permission->resource_id;
+            $key = $permission->slug.'|'.$permission->resource_type.'|'.$permission->resource_id;
             $indexed[$key] = $permission;
         }
 

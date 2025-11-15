@@ -7,6 +7,16 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 获取用户权限列表（分页）
+ *
+ * @example
+ * ListUserPermissions::handle([
+ *     'keyword' => 'admin',
+ *     'role' => 'manager',
+ *     'per_page' => 20,
+ * ]);
+ */
 #[PermissionGroup('user:*', '用户管理')]
 #[Permission('user:view-permissions', '查看用户权限')]
 class ListUserPermissions extends BaseAction
@@ -27,8 +37,6 @@ class ListUserPermissions extends BaseAction
 
     /**
      * 获取用户权限列表
-     *
-     * @return LengthAwarePaginator
      */
     protected function execute(): LengthAwarePaginator
     {
@@ -39,7 +47,7 @@ class ListUserPermissions extends BaseAction
             $keyword = $this->context->data('keyword');
             $query->where(function ($q) use ($keyword) {
                 $q->where('name', 'like', "%{$keyword}%")
-                  ->orWhere('email', 'like', "%{$keyword}%");
+                    ->orWhere('email', 'like', "%{$keyword}%");
             });
         }
 

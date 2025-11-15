@@ -8,6 +8,17 @@ use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 use Rbac\Contracts\DataScopeContract;
 
+/**
+ * 创建数据范围
+ *
+ * @example
+ * CreateDataScope::handle([
+ *     'name' => '部门数据',
+ *     'description' => '只能查看本部门数据',
+ *     'type' => 'department',
+ *     'config' => ['field' => 'department_id'],
+ * ]);
+ */
 #[PermissionGroup('data-scope:*', '数据范围管理')]
 #[Permission('data-scope:create', '创建数据范围')]
 class CreateDataScope extends BaseAction
@@ -35,7 +46,7 @@ class CreateDataScope extends BaseAction
     protected function execute(): DataScopeContract&Model
     {
         $dataScopeModel = config('rbac.models.data_scope');
-        
+
         return $dataScopeModel::create([
             'name' => $this->context->data('name'),
             'description' => $this->context->data('description'),

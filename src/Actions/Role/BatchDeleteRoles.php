@@ -6,6 +6,15 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 批量删除角色
+ *
+ * @example
+ * BatchDeleteRoles::handle([
+ *     'role_ids' => [1, 2, 3],
+ *     'force' => true,  // 强制删除
+ * ]);
+ */
 #[PermissionGroup('role:*', '角色管理')]
 #[Permission('role:batch-delete', '批量删除角色')]
 class BatchDeleteRoles extends BaseAction
@@ -18,6 +27,7 @@ class BatchDeleteRoles extends BaseAction
     protected function rules(): array
     {
         $roleTable = config('rbac.tables.roles');
+
         return [
             'role_ids' => 'required|array',
             'role_ids.*' => "exists:{$roleTable},id",
@@ -42,15 +52,16 @@ class BatchDeleteRoles extends BaseAction
         foreach ($roleIds as $roleId) {
             try {
                 $role = $roleModel::findOrFail($roleId);
-                
+
                 $usersCount = $role->users()->count();
-                
-                if ($usersCount > 0 && !$force) {
+
+                if ($usersCount > 0 && ! $force) {
                     $errors[] = [
                         'id' => $roleId,
                         'name' => $role->name,
-                        'message' => "角色正被 {$usersCount} 个用户使用，请先解除关联或使用强制删除"
+                        'message' => "角色正被 {$usersCount} 个用户使用，请先解除关联或使用强制删除",
                     ];
+
                     continue;
                 }
 
@@ -60,25 +71,25 @@ class BatchDeleteRoles extends BaseAction
                         $user->forgetCachedPermissions();
                     }
                 });
-                
+
                 // 解除所有关联
                 $role->permissions()->detach();
                 $role->users()->detach();
-                
+
                 $role->forceDelete();
                 $deleted++;
-                
+
             } catch (\Exception $e) {
                 $errors[] = [
                     'id' => $roleId,
-                    'message' => $e->getMessage()
+                    'message' => $e->getMessage(),
                 ];
             }
         }
 
         return [
             'deleted' => $deleted,
-            'errors' => $errors
+            'errors' => $errors,
         ];
     }
 }

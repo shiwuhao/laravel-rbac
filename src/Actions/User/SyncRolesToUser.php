@@ -5,7 +5,6 @@ namespace Rbac\Actions\User;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
-use Rbac\Models\Role;
 
 #[PermissionGroup('user-permission:*', '用户权限管理')]
 #[Permission('user-permission:sync-roles', '同步角色给用户')]
@@ -19,6 +18,7 @@ class SyncRolesToUser extends BaseAction
     protected function rules(): array
     {
         $roleTable = config('rbac.tables.roles');
+
         return [
             'role_ids' => 'required|array',
             'role_ids.*' => "exists:{$roleTable},id",
@@ -28,7 +28,6 @@ class SyncRolesToUser extends BaseAction
     /**
      * 同步用户角色（完全替换现有角色）
      *
-     * @return mixed
      * @throws \Exception
      *
      * @example

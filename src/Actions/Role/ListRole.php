@@ -7,6 +7,15 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 获取角色列表
+ *
+ * @example
+ * ListRole::handle([
+ *     'keyword' => '管理',
+ *     'per_page' => 20,
+ * ]);
+ */
 #[PermissionGroup('role:*', '角色管理')]
 #[Permission('role:view', '查看角色')]
 class ListRole extends BaseAction
@@ -27,8 +36,6 @@ class ListRole extends BaseAction
 
     /**
      * 获取角色列表
-     *
-     * @return LengthAwarePaginator
      */
     protected function execute(): LengthAwarePaginator
     {

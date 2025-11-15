@@ -7,6 +7,14 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 同步用户直接权限（替换）
+ *
+ * @example
+ * SyncPermissionsToUser::handle([
+ *     'permission_ids' => [1, 2, 3],
+ * ], $userId);
+ */
 #[PermissionGroup('user-permission:*', '用户权限管理')]
 #[Permission('user:sync-permissions', '同步用户权限')]
 class SyncPermissionsToUser extends BaseAction
@@ -19,6 +27,7 @@ class SyncPermissionsToUser extends BaseAction
     protected function rules(): array
     {
         $permissionTable = config('rbac.tables.permissions');
+
         return [
             'permission_ids' => 'required|array',
             'permission_ids.*' => "exists:{$permissionTable},id",
@@ -28,14 +37,13 @@ class SyncPermissionsToUser extends BaseAction
     /**
      * 同步用户直接权限
      *
-     * @return Model
      * @throws \Exception
      */
     protected function execute(): Model
     {
         $userModel = config('rbac.models.user');
         $permissionModel = config('rbac.models.permission');
-        
+
         $user = $userModel::findOrFail($this->context->id());
 
         $permissionIds = array_values(array_unique(array_map('intval', $this->context->data('permission_ids'))));

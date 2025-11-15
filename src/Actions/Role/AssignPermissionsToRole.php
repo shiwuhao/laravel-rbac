@@ -8,6 +8,14 @@ use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 use Rbac\Contracts\RoleContract;
 
+/**
+ * 分配权限给角色（批量）
+ *
+ * @example
+ * AssignPermissionsToRole::handle([
+ *     'permission_ids' => [1, 2, 3],
+ * ], $roleId);
+ */
 #[PermissionGroup('role:*', '角色管理')]
 #[Permission('role:assign-permissions', '分配权限给角色')]
 class AssignPermissionsToRole extends BaseAction
@@ -15,11 +23,13 @@ class AssignPermissionsToRole extends BaseAction
     /**
      * 验证规则
      *·
+     *
      * @return array<string, string|array>
      */
     protected function rules(): array
     {
         $permissionTable = config('rbac.tables.permissions');
+
         return [
             'permission_ids' => 'required|array',
             'permission_ids.*' => "exists:{$permissionTable},id",
@@ -31,6 +41,7 @@ class AssignPermissionsToRole extends BaseAction
      * 分配角色权限
      *
      * @return RoleContract&Model 返回配置的角色模型实例，含权限与用户
+     *
      * @throws \Exception
      */
     protected function execute(): RoleContract&Model

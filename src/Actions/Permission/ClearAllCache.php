@@ -7,6 +7,12 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 清除所有权限缓存
+ *
+ * @example
+ * ClearAllCache::handle([]);
+ */
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:clear-cache', '清除权限缓存')]
 class ClearAllCache extends BaseAction
@@ -20,15 +26,15 @@ class ClearAllCache extends BaseAction
     {
         $cacheKey = config('rbac.cache.key');
         $cacheDriver = config('cache.default');
-        
+
         if ($cacheDriver === 'redis' || $cacheDriver === 'memcached') {
             // 对于 Redis 和 Memcached，尝试清除所有相关键
             try {
                 $redis = Cache::getStore()->getRedis();
-                $pattern = $cacheKey . '.*';
+                $pattern = $cacheKey.'.*';
                 $keys = $redis->keys($pattern);
-                
-                if (!empty($keys)) {
+
+                if (! empty($keys)) {
                     foreach ($keys as $key) {
                         Cache::forget($key);
                     }

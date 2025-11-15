@@ -7,6 +7,15 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 同步用户数据范围（替换）
+ *
+ * @example
+ * SyncDataScopesToUser::handle([
+ *     'data_scope_ids' => [1, 2, 3],
+ *     'constraint' => 'department_id',
+ * ], $userId);
+ */
 #[PermissionGroup('user-permission:*', '用户权限管理')]
 #[Permission('user:sync-data-scopes', '同步用户数据范围')]
 class SyncDataScopesToUser extends BaseAction
@@ -19,6 +28,7 @@ class SyncDataScopesToUser extends BaseAction
     protected function rules(): array
     {
         $dataScopeTable = config('rbac.tables.data_scopes');
+
         return [
             'data_scope_ids' => 'required|array',
             'data_scope_ids.*' => "exists:{$dataScopeTable},id",
@@ -29,14 +39,13 @@ class SyncDataScopesToUser extends BaseAction
     /**
      * 同步用户数据范围
      *
-     * @return Model
      * @throws \Exception
      */
     protected function execute(): Model
     {
         $userModel = config('rbac.models.user');
         $dataScopeModel = config('rbac.models.data_scope');
-        
+
         $user = $userModel::findOrFail($this->context->id());
 
         $dataScopeIds = array_values(array_unique(array_map('intval', $this->context->data('data_scope_ids'))));

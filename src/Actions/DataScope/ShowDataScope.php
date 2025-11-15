@@ -8,6 +8,12 @@ use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 use Rbac\Contracts\DataScopeContract;
 
+/**
+ * 获取数据范围详情
+ *
+ * @example
+ * ShowDataScope::handle([], $dataScopeId);
+ */
 #[PermissionGroup('data-scope:*', '数据范围管理')]
 #[Permission('data-scope:view', '查看数据范围')]
 class ShowDataScope extends BaseAction
@@ -20,7 +26,7 @@ class ShowDataScope extends BaseAction
     protected function execute(): DataScopeContract&Model
     {
         $dataScopeModel = config('rbac.models.data_scope');
-        
+
         return $dataScopeModel::withCount(['permissions', 'users'])
             ->with('permissions')
             ->findOrFail($this->context->id());

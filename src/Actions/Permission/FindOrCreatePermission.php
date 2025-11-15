@@ -5,10 +5,22 @@ namespace Rbac\Actions\Permission;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
-use Rbac\Models\Permission;
 use Rbac\Enums\ActionType;
 use Rbac\Enums\GuardType;
+use Rbac\Models\Permission;
 
+/**
+ * 查找或创建权限
+ *
+ * @example
+ * FindOrCreatePermission::handle([
+ *     'slug' => 'article:view',
+ *     'name' => '查看文章',
+ *     'resource' => 'article',
+ *     'action' => 'view',
+ *     'guard' => 'web',
+ * ]);
+ */
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:find-or-create', '查找或创建权限')]
 class FindOrCreatePermission extends BaseAction
@@ -31,8 +43,6 @@ class FindOrCreatePermission extends BaseAction
 
     /**
      * 查找或创建权限
-     *
-     * @return Permission
      */
     protected function execute(): Permission
     {

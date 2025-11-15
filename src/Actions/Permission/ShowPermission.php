@@ -8,6 +8,12 @@ use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
 use Rbac\Contracts\PermissionContract;
 
+/**
+ * 获取权限详情
+ *
+ * @example
+ * ShowPermission::handle([], $permissionId);
+ */
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:view', '查看权限')]
 class ShowPermission extends BaseAction
@@ -20,7 +26,7 @@ class ShowPermission extends BaseAction
     protected function execute(): PermissionContract&Model
     {
         $permissionModel = config('rbac.models.permission');
-        
+
         return $permissionModel::withCount(['roles', 'users'])
             ->with('roles')
             ->findOrFail($this->context->id());

@@ -7,6 +7,16 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 获取数据范围列表（分页）
+ *
+ * @example
+ * ListDataScope::handle([
+ *     'keyword' => '部门',
+ *     'type' => 'department',
+ *     'per_page' => 20,
+ * ]);
+ */
 #[PermissionGroup('data-scope:*', '数据范围管理')]
 #[Permission('data-scope:view', '查看数据范围')]
 class ListDataScope extends BaseAction
@@ -27,8 +37,6 @@ class ListDataScope extends BaseAction
 
     /**
      * 获取数据范围列表
-     *
-     * @return LengthAwarePaginator
      */
     protected function execute(): LengthAwarePaginator
     {
@@ -39,7 +47,7 @@ class ListDataScope extends BaseAction
             $keyword = $this->context->data('keyword');
             $query->where(function ($q) use ($keyword) {
                 $q->where('name', 'like', "%{$keyword}%")
-                  ->orWhere('description', 'like', "%{$keyword}%");
+                    ->orWhere('description', 'like', "%{$keyword}%");
             });
         }
 

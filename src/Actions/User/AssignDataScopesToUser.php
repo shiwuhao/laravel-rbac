@@ -7,6 +7,16 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 分配数据范围给用户（批量）
+ *
+ * @example
+ * AssignDataScopesToUser::handle([
+ *     'data_scope_ids' => [1, 2, 3],
+ *     'constraint' => 'department_id',
+ *     'replace' => false,
+ * ], $userId);
+ */
 #[PermissionGroup('user-permission:*', '用户权限管理')]
 #[Permission('user:assign-data-scopes', '分配数据范围给用户')]
 class AssignDataScopesToUser extends BaseAction
@@ -19,6 +29,7 @@ class AssignDataScopesToUser extends BaseAction
     protected function rules(): array
     {
         $dataScopeTable = config('rbac.tables.data_scopes');
+
         return [
             'data_scope_ids' => 'required|array',
             'data_scope_ids.*' => "exists:{$dataScopeTable},id",
@@ -30,14 +41,13 @@ class AssignDataScopesToUser extends BaseAction
     /**
      * 分配用户数据范围
      *
-     * @return Model
      * @throws \Exception
      */
     protected function execute(): Model
     {
         $userModel = config('rbac.models.user');
         $dataScopeModel = config('rbac.models.data_scope');
-        
+
         $user = $userModel::findOrFail($this->context->id());
 
         $dataScopeIds = array_values(array_unique(array_map('intval', $this->context->data('data_scope_ids'))));

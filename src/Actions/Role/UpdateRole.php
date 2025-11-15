@@ -9,6 +9,15 @@ use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 use Rbac\Contracts\RoleContract;
 
+/**
+ * 更新角色
+ *
+ * @example
+ * UpdateRole::handle([
+ *     'name' => '高级管理员',
+ *     'description' => '拥有部分管理权限',
+ * ], $roleId);
+ */
 #[PermissionGroup('role:*', '角色管理')]
 #[Permission('role:update', '更新角色')]
 class UpdateRole extends BaseAction
@@ -22,7 +31,7 @@ class UpdateRole extends BaseAction
     {
         $id = $this->context?->id();
         $roleTable = config('rbac.tables.roles');
-        
+
         return [
             'name' => 'sometimes|string|max:100',
             'slug' => [

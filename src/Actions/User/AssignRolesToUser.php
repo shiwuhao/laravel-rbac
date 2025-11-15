@@ -7,6 +7,15 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 分配角色给用户（批量）
+ *
+ * @example
+ * AssignRolesToUser::handle([
+ *     'role_ids' => [1, 2, 3],
+ *     'replace' => false,
+ * ], $userId);
+ */
 #[PermissionGroup('user-permission:*', '用户权限管理')]
 #[Permission('user:assign-roles', '分配角色给用户')]
 class AssignRolesToUser extends BaseAction
@@ -19,6 +28,7 @@ class AssignRolesToUser extends BaseAction
     protected function rules(): array
     {
         $roleTable = config('rbac.tables.roles');
+
         return [
             'role_ids' => 'required|array',
             'role_ids.*' => "exists:{$roleTable},id",
@@ -29,14 +39,13 @@ class AssignRolesToUser extends BaseAction
     /**
      * 分配用户角色
      *
-     * @return Model
      * @throws \Exception
      */
     protected function execute(): Model
     {
         $userModel = config('rbac.models.user');
         $roleModel = config('rbac.models.role');
-        
+
         $user = $userModel::findOrFail($this->context->id());
 
         $roleIds = array_values(array_unique(array_map('intval', $this->context->data('role_ids'))));

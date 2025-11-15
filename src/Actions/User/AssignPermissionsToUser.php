@@ -7,6 +7,15 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 分配直接权限给用户（批量）
+ *
+ * @example
+ * AssignPermissionsToUser::handle([
+ *     'permission_ids' => [1, 2, 3],
+ *     'replace' => false,
+ * ], $userId);
+ */
 #[PermissionGroup('user-permission:*', '用户权限管理')]
 #[Permission('user:assign-permissions', '分配权限给用户')]
 class AssignPermissionsToUser extends BaseAction
@@ -19,6 +28,7 @@ class AssignPermissionsToUser extends BaseAction
     protected function rules(): array
     {
         $permissionTable = config('rbac.tables.permissions');
+
         return [
             'permission_ids' => 'required|array',
             'permission_ids.*' => "exists:{$permissionTable},id",
@@ -29,14 +39,13 @@ class AssignPermissionsToUser extends BaseAction
     /**
      * 分配用户直接权限
      *
-     * @return Model
      * @throws \Exception
      */
     protected function execute(): Model
     {
         $userModel = config('rbac.models.user');
         $permissionModel = config('rbac.models.permission');
-        
+
         $user = $userModel::findOrFail($this->context->id());
 
         $permissionIds = array_values(array_unique(array_map('intval', $this->context->data('permission_ids'))));

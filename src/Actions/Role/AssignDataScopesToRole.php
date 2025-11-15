@@ -8,7 +8,12 @@ use Rbac\Attributes\Permission;
 use Rbac\Contracts\RoleContract;
 
 /**
- * 为角色分配数据范围
+ * 为角色分配数据范围（批量）
+ *
+ * @example
+ * AssignDataScopesToRole::handle([
+ *     'data_scope_ids' => [1, 2, 3],
+ * ], $roleId);
  */
 #[Permission('role:assign-data-scopes', '分配数据范围给角色')]
 class AssignDataScopesToRole extends BaseAction

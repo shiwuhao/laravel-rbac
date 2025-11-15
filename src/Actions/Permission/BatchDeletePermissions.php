@@ -6,6 +6,15 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 批量删除权限
+ *
+ * @example
+ * BatchDeletePermissions::handle([
+ *     'permission_ids' => [1, 2, 3],
+ *     'force' => true,
+ * ]);
+ */
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:batch-delete', '批量删除权限')]
 class BatchDeletePermissions extends BaseAction
@@ -18,6 +27,7 @@ class BatchDeletePermissions extends BaseAction
     protected function rules(): array
     {
         $permissionTable = config('rbac.tables.permissions');
+
         return [
             'permission_ids' => 'required|array',
             'permission_ids.*' => "exists:{$permissionTable},id",
@@ -42,18 +52,19 @@ class BatchDeletePermissions extends BaseAction
         foreach ($permissionIds as $permissionId) {
             try {
                 $permission = $permissionModel::findOrFail($permissionId);
-                
+
                 $rolesCount = $permission->roles()->count();
-                
-                if ($rolesCount > 0 && !$force) {
+
+                if ($rolesCount > 0 && ! $force) {
                     $errors[] = [
                         'id' => $permissionId,
                         'name' => $permission->name,
-                        'message' => "权限正被 {$rolesCount} 个角色使用，请先解除关联或使用强制删除"
+                        'message' => "权限正被 {$rolesCount} 个角色使用，请先解除关联或使用强制删除",
                     ];
+
                     continue;
                 }
-                
+
                 // 清除关联用户的权限缓存
                 $permission->roles()->each(function ($role) {
                     $role->users()->each(function ($user) {
@@ -62,26 +73,26 @@ class BatchDeletePermissions extends BaseAction
                         }
                     });
                 });
-                
+
                 // 解除所有关联
                 $permission->roles()->detach();
                 $permission->users()->detach();
                 $permission->dataScopes()->detach();
-                
+
                 $permission->delete();
                 $deleted++;
-                
+
             } catch (\Exception $e) {
                 $errors[] = [
                     'id' => $permissionId,
-                    'message' => $e->getMessage()
+                    'message' => $e->getMessage(),
                 ];
             }
         }
 
         return [
             'deleted' => $deleted,
-            'errors' => $errors
+            'errors' => $errors,
         ];
     }
 }

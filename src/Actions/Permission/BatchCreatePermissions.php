@@ -7,6 +7,16 @@ use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 批量创建权限
+ *
+ * @example
+ * BatchCreatePermissions::handle([
+ *     'resource' => 'article',
+ *     'actions' => ['view', 'create', 'update', 'delete'],
+ *     'guard_name' => 'web',
+ * ]);
+ */
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:batch-create', '批量创建权限')]
 class BatchCreatePermissions extends BaseAction

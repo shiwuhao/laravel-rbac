@@ -5,18 +5,22 @@ namespace Rbac\Actions\Permission;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
-use Rbac\Models\Role;
-use Rbac\Models\Permission;
 use Rbac\Models\DataScope;
+use Rbac\Models\Permission;
+use Rbac\Models\Role;
 
+/**
+ * 获取权限统计信息
+ *
+ * @example
+ * GetPermissionStats::handle([]);
+ */
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:get-stats', '获取权限统计信息')]
 class GetPermissionStats extends BaseAction
 {
     /**
      * 获取权限统计信息
-     *
-     * @return array
      */
     protected function execute(): array
     {

@@ -2,11 +2,23 @@
 
 namespace Rbac\Actions\Permission;
 
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission as PermissionAttribute;
 use Rbac\Attributes\PermissionGroup;
 
+/**
+ * 获取权限列表（支持分页和树形展示）
+ *
+ * @example
+ * ListPermission::handle([
+ *     'keyword' => 'article',
+ *     'resource' => 'article',
+ *     'action' => 'view',
+ *     'guard_name' => 'web',
+ *     'format' => 'tree',
+ *     'per_page' => 20,
+ * ]);
+ */
 #[PermissionGroup('permission:*', '权限管理')]
 #[PermissionAttribute('permission:view', '查看权限')]
 class ListPermission extends BaseAction
@@ -30,8 +42,6 @@ class ListPermission extends BaseAction
 
     /**
      * 获取权限列表
-     *
-     * @return mixed
      */
     protected function execute(): mixed
     {
@@ -42,7 +52,7 @@ class ListPermission extends BaseAction
             $keyword = $this->context->data('keyword');
             $query->where(function ($q) use ($keyword) {
                 $q->where('name', 'like', "%{$keyword}%")
-                  ->orWhere('slug', 'like', "%{$keyword}%");
+                    ->orWhere('slug', 'like', "%{$keyword}%");
             });
         }
 
@@ -77,7 +87,7 @@ class ListPermission extends BaseAction
                             'guard_name' => $p->guard_name,
                             'roles_count' => $p->roles_count ?? 0,
                             'users_count' => $p->users_count ?? 0,
-                            'is_instance' => !empty($p->resource_type) && !empty($p->resource_id),
+                            'is_instance' => ! empty($p->resource_type) && ! empty($p->resource_id),
                             'resource_type' => $p->resource_type,
                             'resource_id' => $p->resource_id,
                         ];
