@@ -52,6 +52,13 @@ class ScanPermissionsCommand extends Command
     protected array $skipped = [];
 
     /**
+     * 已处理过的权限标识（去重）
+     *
+     * @var array
+     */
+    protected array $seenSlugs = [];
+
+    /**
      * 执行命令
      *
      * @return int
@@ -196,6 +203,12 @@ class ScanPermissionsCommand extends Command
         bool $dryRun,
         ?string $description = null
     ): void {
+        // 去重同一 slug 防止重复处理
+        if (isset($this->seenSlugs[$slug])) {
+            return;
+        }
+        $this->seenSlugs[$slug] = true;
+
         // 解析 slug 获取 resource 和 action
         $parts = explode(':', $slug);
         $resource = $parts[0] ?? 'unknown';
@@ -379,22 +392,41 @@ class ScanPermissionsCommand extends Command
     {
         $routes = app('router')->getRoutes();
 
+        $controllerClasses = [];
+        $actionClasses = [];
+
         foreach ($routes as $route) {
             $action = $route->getAction();
 
-            // 处理 Action 模式
+            // 处理 Action 模式（Invokable 类）
             if (isset($action['uses']) && is_string($action['uses'])) {
+                $actionClasses[] = $action['uses'];
+                // 仍然扫描该 Invokable 的类注解（保证基础权限）
                 $this->scanRouteAction($action['uses'], $route, $force, $dryRun);
             }
 
             // 处理 Controller 模式
-            if (isset($action['controller'])) {
-                // 检查是否包含 @ 分隔符
+            if (isset($action['controller']) && is_string($action['controller'])) {
                 if (str_contains($action['controller'], '@')) {
                     [$controller, $method] = explode('@', $action['controller']);
+                    $controllerClasses[] = $controller;
+                    // 仍然扫描该具体方法（保证方法上声明的权限被纳入）
                     $this->scanRouteMethod($controller, $method, $route, $force, $dryRun);
+                } else {
+                    // 没有 @ 的情况，整类加入
+                    $controllerClasses[] = $action['controller'];
                 }
             }
+        }
+
+        // 去重并扫描控制器类的“所有权限注解”（类和全部方法）
+        foreach (array_values(array_unique($controllerClasses)) as $className) {
+            $this->scanControllerAll($className, $force, $dryRun);
+        }
+
+        // 去重并扫描 Invokable Action 类的“所有权限注解”（类和全部方法）
+        foreach (array_values(array_unique($actionClasses)) as $className) {
+            $this->scanControllerAll($className, $force, $dryRun);
         }
     }
 
@@ -478,6 +510,120 @@ class ScanPermissionsCommand extends Command
             }
         } catch (\Exception $e) {
             // 忽略异常
+        }
+    }
+
+    /**
+     * 扫描控制器类的所有权限注解（类级 + 全部方法）
+     */
+    protected function scanControllerAll(string $className, bool $force, bool $dryRun): void
+    {
+        if (!class_exists($className)) {
+            return;
+        }
+
+        try {
+            $reflection = new \ReflectionClass($className);
+
+            // 类级权限组
+            $groupData = null;
+            foreach ($reflection->getAttributes(PermissionGroup::class) as $attr) {
+                $instance = $attr->newInstance();
+                $groupData = [
+                    'slug' => $instance->slug,
+                    'name' => $instance->name,
+                ];
+            }
+
+            // 类级权限
+            foreach ($reflection->getAttributes(Permission::class) as $attr) {
+                $p = $attr->newInstance();
+                $this->processPermission(
+                    $p->slug,
+                    $p->name,
+                    $groupData,
+                    $className . ' [控制器]',
+                    $force,
+                    $dryRun,
+                    $p->description
+                );
+            }
+
+            // 方法级权限（遍历全部 public/protected 方法）
+            foreach ($reflection->getMethods() as $method) {
+                foreach ($method->getAttributes(Permission::class) as $attr) {
+                    $p = $attr->newInstance();
+                    $this->processPermission(
+                        $p->slug,
+                        $p->name,
+                        $groupData,
+                        class_basename($className) . '@' . $method->getName() . ' [控制器]',
+                        $force,
+                        $dryRun,
+                        $p->description
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            // 忽略反射异常
+        }
+    }
+
+    /**
+     * 扫描路由文件中的权限注解（文件级）
+     *
+     * @param bool $force
+     * @param bool $dryRun
+     * @return void
+     */
+    protected function scanRouteFiles(bool $force, bool $dryRun): void
+    {
+        $files = array_filter([
+            base_path('routes/web.php'),
+            base_path('routes/api.php'),
+            base_path('routes/rbac.php'),
+        ], fn ($f) => is_file($f));
+
+        foreach ($files as $file) {
+            try {
+                $content = file_get_contents($file);
+                if ($content === false) {
+                    continue;
+                }
+
+                // 扫描 PermissionGroup 注解（可用于生成描述或分组）
+                $groupMatches = [];
+                preg_match_all('/#\[\s*PermissionGroup\s*\(\s*\'([^\']+)\'\s*,\s*\'([^\']+)\'\s*\)\s*\]/u', $content, $groupMatches, PREG_SET_ORDER);
+                $groupData = null;
+                if (!empty($groupMatches)) {
+                    $last = end($groupMatches);
+                    $groupData = [
+                        'slug' => $last[1],
+                        'name' => $last[2],
+                    ];
+                }
+
+                // 扫描 Permission 注解
+                $permMatches = [];
+                preg_match_all('/#\[\s*Permission\s*\(\s*\'([^\']+)\'(?:\s*,\s*\'([^\']+)\')?\s*\)\s*\]/u', $content, $permMatches, PREG_SET_ORDER);
+
+                foreach ($permMatches as $m) {
+                    $slug = $m[1];
+                    $name = $m[2] ?? null;
+
+                    // 仅生成基础权限，resource_type/resource_id 为空
+                    $this->processPermission(
+                        $slug,
+                        $name,
+                        $groupData,
+                        basename($file) . ' [文件]',
+                        $force,
+                        $dryRun
+                    );
+                }
+            } catch (\Throwable $e) {
+                // 忽略文件解析异常
+            }
         }
     }
 }

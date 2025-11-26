@@ -9,25 +9,15 @@ use Rbac\Attributes\Permission;
 use Rbac\Contracts\RoleContract;
 
 /**
- * 为角色分配实例权限
+ * 为角色分配实例权限（批量）
  *
- * 支持单个或批量分配
- *
- * @example 单个分配
+ * @example
  * AssignInstancePermissionToRole::handle([
- *     'role_id' => 1,
- *     'permission_slug' => 'report:view',
- *     'resource_type' => 'App\Models\Report',
- *     'resource_id' => 123,
- * ]);
- * @example 批量分配
- * AssignInstancePermissionToRole::handle([
- *     'role_id' => 1,
  *     'permissions' => [
- *         ['slug' => 'menu:access', 'resource_type' => 'App\Models\Menu', 'resource_id' => 1],
- *         ['slug' => 'menu:access', 'resource_type' => 'App\Models\Menu', 'resource_id' => 2],
+ *         ['slug' => 'menu:access', 'resource_type' => 'App\\Models\\Menu', 'resource_id' => 1],
+ *         ['slug' => 'menu:access', 'resource_type' => 'App\\Models\\Menu', 'resource_id' => 2],
  *     ]
- * ]);
+ * ], $roleId);
  */
 #[Permission('role:assign-instance-permissions', '为角色分配实例权限')]
 class AssignInstancePermissionToRole extends BaseAction
@@ -37,18 +27,8 @@ class AssignInstancePermissionToRole extends BaseAction
      */
     protected function rules(): array
     {
-        $roleTable = config('rbac.tables.roles');
-
         return [
-            'role_id' => "required|exists:{$roleTable},id",
-
-            // 单个权限参数
-            'permission_slug' => 'required_without:permissions|string',
-            'resource_type' => 'required_without:permissions|string',
-            'resource_id' => 'required_without:permissions|integer',
-
-            // 批量权限参数
-            'permissions' => 'required_without:permission_slug|array|min:1',
+            'permissions' => 'required|array|min:1',
             'permissions.*.slug' => 'required|string',
             'permissions.*.resource_type' => 'required|string',
             'permissions.*.resource_id' => 'required|integer',
@@ -63,46 +43,52 @@ class AssignInstancePermissionToRole extends BaseAction
         $roleModel = config('rbac.models.role');
         $permissionModel = config('rbac.models.permission');
 
-        $role = $roleModel::findOrFail($this->context->data('role_id'));
-        $requestedPermissions = $this->normalizePermissions();
+        $role = $roleModel::findOrFail($this->context->id());
+        $permissions = $this->context->data('permissions');
 
-        return DB::transaction(function () use ($role, $permissionModel, $requestedPermissions) {
-            $uniqueSlugs = collect($requestedPermissions)->pluck('slug')->unique()->values();
+        return DB::transaction(function () use ($role, $permissionModel, $permissions) {
+            // 标准化 slug 格式（将 . 替换为 :)
+            $permissions = collect($permissions)->map(function ($item) {
+                $item['slug'] = str_replace('.', ':', $item['slug']);
+                return $item;
+            })->all();
 
+            $uniqueSlugs = collect($permissions)->pluck('slug')->unique()->values();
+
+            // 查询基础权限（通用权限）
             $basePermissions = $permissionModel::whereIn('slug', $uniqueSlugs)
                 ->whereNull('resource_type')
                 ->whereNull('resource_id')
                 ->get()
                 ->keyBy('slug');
 
-            $instanceConditions = collect($requestedPermissions)->map(function ($item) {
-                return [
-                    'slug' => $item['slug'],
-                    'resource_type' => $item['resource_type'],
-                    'resource_id' => $item['resource_id'],
-                ];
-            })->unique(function ($item) {
-                return $item['slug'].'|'.$item['resource_type'].'|'.$item['resource_id'];
+            // 检查是否所有 slug 都存在基础权限
+            $missingSlugs = $uniqueSlugs->diff($basePermissions->keys());
+            if ($missingSlugs->isNotEmpty()) {
+                throw new \Exception('以下基础权限不存在: ' . $missingSlugs->implode(', '));
+            }
+
+            // 去重实例条件
+            $instanceConditions = collect($permissions)->unique(function ($item) {
+                return $item['slug'] . '|' . $item['resource_type'] . '|' . $item['resource_id'];
             })->values();
 
+            // 查找已存在的实例权限
             $existingPermissions = $this->batchFindInstancePermissions(
                 $permissionModel,
                 $instanceConditions
             );
 
+            // 准备需要创建的实例权限
             $toCreate = [];
             foreach ($instanceConditions as $condition) {
-                $key = $condition['slug'].'|'.$condition['resource_type'].'|'.$condition['resource_id'];
+                $key = $condition['slug'] . '|' . $condition['resource_type'] . '|' . $condition['resource_id'];
 
-                if (! isset($existingPermissions[$key])) {
-                    $basePermission = $basePermissions[$condition['slug']] ?? null;
-
-                    if (! $basePermission) {
-                        continue;
-                    }
+                if (!isset($existingPermissions[$key])) {
+                    $basePermission = $basePermissions[$condition['slug']];
 
                     $toCreate[] = [
-                        'name' => $basePermission->name.' #'.$condition['resource_id'],
+                        'name' => $basePermission->name . ' #' . $condition['resource_id'],
                         'slug' => $condition['slug'],
                         'resource' => $basePermission->resource,
                         'action' => $basePermission->action,
@@ -116,9 +102,11 @@ class AssignInstancePermissionToRole extends BaseAction
                 }
             }
 
-            if (! empty($toCreate)) {
+            // 批量创建实例权限
+            if (!empty($toCreate)) {
                 $permissionModel::insert($toCreate);
 
+                // 重新查询新创建的权限
                 $newlyCreated = $this->batchFindInstancePermissions(
                     $permissionModel,
                     $instanceConditions
@@ -126,27 +114,19 @@ class AssignInstancePermissionToRole extends BaseAction
                 $existingPermissions = array_merge($existingPermissions, $newlyCreated);
             }
 
+            // 分配权限给角色（不移除现有权限）
             $permissionIds = collect($existingPermissions)->pluck('id')->unique()->values();
             $role->permissions()->syncWithoutDetaching($permissionIds);
 
+            // 清除关联用户的缓存
+            $role->users()->each(function ($user) {
+                if (method_exists($user, 'forgetCachedPermissions')) {
+                    $user->forgetCachedPermissions();
+                }
+            });
+
             return $role->load('permissions');
         });
-    }
-
-    /**
-     * 标准化权限数据
-     */
-    protected function normalizePermissions(): array
-    {
-        if ($this->context->has('permissions')) {
-            return $this->context->data('permissions');
-        }
-
-        return [[
-            'slug' => $this->context->data('permission_slug'),
-            'resource_type' => $this->context->data('resource_type'),
-            'resource_id' => $this->context->data('resource_id'),
-        ]];
     }
 
     /**
@@ -172,7 +152,7 @@ class AssignInstancePermissionToRole extends BaseAction
 
         $indexed = [];
         foreach ($permissions as $permission) {
-            $key = $permission->slug.'|'.$permission->resource_type.'|'.$permission->resource_id;
+            $key = $permission->slug . '|' . $permission->resource_type . '|' . $permission->resource_id;
             $indexed[$key] = $permission;
         }
 

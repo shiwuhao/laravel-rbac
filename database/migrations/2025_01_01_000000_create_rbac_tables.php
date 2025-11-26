@@ -43,7 +43,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['slug', 'guard_name']);
+            $table->unique(['slug', 'guard_name', 'resource_type', 'resource_id'], 'uniq_permissions_slug_guard_instance');
             $table->index(['resource', 'action']);
             $table->index(['resource_type', 'resource_id'], 'idx_resource_instance');
             $table->index('guard_name');
