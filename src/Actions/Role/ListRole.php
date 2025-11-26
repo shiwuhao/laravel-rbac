@@ -28,9 +28,7 @@ class ListRole extends BaseAction
     protected function rules(): array
     {
         return [
-            'keyword' => 'sometimes|string',
-            'per_page' => 'sometimes|integer|min:15|max:50',
-            'guard_name' => 'sometimes|string|max:50',
+            'per_page' => 'sometimes|integer|min:15|max:1000',
         ];
     }
 
@@ -42,15 +40,9 @@ class ListRole extends BaseAction
         $roleModel = config('rbac.models.role');
         $query = $roleModel::query()->withCount(['permissions', 'users']);
 
-        if ($this->context->has('keyword')) {
-            $keyword = $this->context->data('keyword');
-            $query->where('name', 'like', "%{$keyword}%");
-        }
+        // 应用查询过滤器（应用层通过配置注入搜索逻辑）
+        $query = $this->applyQueryFilter($query, $this->context->raw());
 
-        if ($this->context->has('guard_name')) {
-            $query->where('guard_name', $this->context->data('guard_name'));
-        }
-
-        return $query->paginate($this->context->data('per_page', 15));
+        return $query->paginate($this->getPerPage());
     }
 }

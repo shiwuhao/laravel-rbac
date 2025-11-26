@@ -228,4 +228,16 @@ return [
 
     // 响应格式化器
     'response_formatter' => \Rbac\Support\ResponseFormatter::class,
+
+    // 查询过滤器回调（在执行查询前应用）
+    'query_filter' => function (\Illuminate\Database\Eloquent\Builder $query, array $params) {
+        $model = $query->getModel();
+
+        // 如果模型有 search scope，直接使用
+        if (method_exists($model, 'scopeSearch')) {
+            return $query->search($params);
+        }
+
+        return $query;
+    },
 ];

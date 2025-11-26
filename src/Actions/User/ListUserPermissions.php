@@ -29,8 +29,6 @@ class ListUserPermissions extends BaseAction
     protected function rules(): array
     {
         return [
-            'keyword' => 'sometimes|string',
-            'role' => 'sometimes|string',
             'per_page' => 'sometimes|integer|min:15|max:100',
         ];
     }
@@ -41,22 +39,11 @@ class ListUserPermissions extends BaseAction
     protected function execute(): LengthAwarePaginator
     {
         $userModel = config('rbac.models.user');
-        $query = $userModel::query()->with(['roles.permissions', 'permissions']);
+        $query = $userModel::query()->with(['roles.permissions', 'directPermissions']);
 
-        if ($this->context->has('keyword')) {
-            $keyword = $this->context->data('keyword');
-            $query->where(function ($q) use ($keyword) {
-                $q->where('name', 'like', "%{$keyword}%")
-                    ->orWhere('email', 'like', "%{$keyword}%");
-            });
-        }
+        // 应用查询过滤器（应用层通过配置注入搜索逻辑）
+        $query = $this->applyQueryFilter($query, $this->context->raw());
 
-        if ($this->context->has('role')) {
-            $query->whereHas('roles', function ($q) {
-                $q->where('slug', $this->context->data('role'));
-            });
-        }
-
-        return $query->paginate($this->context->data('per_page', 15));
+        return $query->paginate($this->getPerPage());
     }
 }

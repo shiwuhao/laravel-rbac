@@ -12,10 +12,12 @@ class ActionContext
     /**
      * @param  array  $data  已验证的数据
      * @param  array  $args  额外参数（如 ID 等）
+     * @param  array  $rawData  原始请求数据（用于过滤器）
      */
     public function __construct(
         public readonly array $data,
-        public readonly array $args = []
+        public readonly array $args = [],
+        public readonly array $rawData = []
     ) {}
 
     /**
@@ -68,6 +70,16 @@ class ActionContext
     public function all(): array
     {
         return $this->data;
+    }
+
+    /**
+     * 获取原始请求数据（包含未验证的参数）
+     *
+     * 用于查询过滤器，确保 GET 参数不被验证规则过滤
+     */
+    public function raw(): array
+    {
+        return $this->rawData ?: $this->data;
     }
 
     /**

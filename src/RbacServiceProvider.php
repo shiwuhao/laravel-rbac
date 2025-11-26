@@ -197,7 +197,6 @@ class RbacServiceProvider extends ServiceProvider
         });
     }
 
-    // Deleted: registerObservers() 方法已移除
     /**
      * 注册路由权限生成
      */

@@ -31,11 +31,7 @@ class ListPermission extends BaseAction
     protected function rules(): array
     {
         return [
-            'keyword' => 'sometimes|string',
-            'resource' => 'sometimes|string|max:100',
-            'action' => 'sometimes|string|max:50',
-            'guard_name' => 'sometimes|string|max:50',
-            'per_page' => 'sometimes|integer|min:15|max:50',
+            'per_page' => 'sometimes|integer|min:15|max:1000',
             'format' => 'sometimes|string|in:list,tree',
         ];
     }
@@ -48,25 +44,8 @@ class ListPermission extends BaseAction
         $permissionModel = config('rbac.models.permission');
         $query = $permissionModel::query()->withCount(['roles', 'users']);
 
-        if ($this->context->has('keyword')) {
-            $keyword = $this->context->data('keyword');
-            $query->where(function ($q) use ($keyword) {
-                $q->where('name', 'like', "%{$keyword}%")
-                    ->orWhere('slug', 'like', "%{$keyword}%");
-            });
-        }
-
-        if ($this->context->has('resource')) {
-            $query->where('resource', $this->context->data('resource'));
-        }
-
-        if ($this->context->has('action')) {
-            $query->where('action', $this->context->data('action'));
-        }
-
-        if ($this->context->has('guard_name')) {
-            $query->where('guard_name', $this->context->data('guard_name'));
-        }
+        // 应用查询过滤器（应用层通过配置注入搜索逻辑）
+        $query = $this->applyQueryFilter($query, $this->context->raw());
 
         // 树形展示
         if ($this->context->data('format', 'list') === 'tree') {
@@ -99,6 +78,6 @@ class ListPermission extends BaseAction
         }
 
         // 默认分页列表
-        return $query->paginate($this->context->data('per_page', 15));
+        return $query->paginate($this->getPerPage());
     }
 }

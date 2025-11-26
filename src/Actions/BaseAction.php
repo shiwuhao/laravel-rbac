@@ -55,6 +55,36 @@ abstract class BaseAction
     }
 
     /**
+     * 应用查询过滤器（从配置读取）
+     *
+     * @param  array  $params  查询参数
+     */
+    protected function applyQueryFilter(\Illuminate\Database\Eloquent\Builder $query, array $params): \Illuminate\Database\Eloquent\Builder
+    {
+        $filter = config('rbac.query_filter');
+
+        // 如果配置了过滤器且是闭包，则执行
+        if ($filter instanceof \Closure) {
+            return $filter($query, $params);
+        }
+
+        return $query;
+    }
+
+    /**
+     * 获取分页大小（限制最大值）
+     *
+     * @param  int  $default  默认值
+     * @param  int  $max  最大值
+     */
+    protected function getPerPage(int $default = 15, int $max = 100): int
+    {
+        $perPage = $this->context->data('per_page', $default);
+
+        return min($perPage, $max);
+    }
+
+    /**
      * 静态调用入口
      *
      * @param  array  $data  数据数组
@@ -67,10 +97,10 @@ abstract class BaseAction
     public static function handle(array $data = [], ...$args): mixed
     {
         $action = app(static::class);
-        $action->context = new ActionContext($data, $args);
+        $action->context = new ActionContext($data, $args, $data);
 
         $validated = $action->validate($data);
-        $action->context = new ActionContext($validated, $args);
+        $action->context = new ActionContext($validated, $args, $data);
 
         return $action->execute();
     }
@@ -78,18 +108,28 @@ abstract class BaseAction
     /**
      * 实例调用入口（支持依赖注入）
      *
-     * @param  array  $data  数据数组
+     * 处理路由参数：当第一个参数是路径参数（如 {id}）时，自动从 request 获取数据
+     *
+     * @param  mixed  $dataOrId  数据数组或路径参数（如 id）
      * @param  mixed  ...$args  额外参数
      */
-    public function __invoke(array $data = [], ...$args): mixed
+    public function __invoke(mixed $dataOrId = null, ...$args): mixed
     {
-        if (empty($data) && function_exists('request')) {
+        // 区分路径参数和数据数组
+        if (is_array($dataOrId)) {
+            $data = $dataOrId;
+        } else {
+            // 路径参数场景：从 request 获取数据，路径参数作为额外参数
             $data = request()->all();
+            if ($dataOrId !== null) {
+                array_unshift($args, $dataOrId);
+            }
         }
 
         try {
+            // 验证数据，但保留原始数据用于过滤器
             $validated = $this->validate($data);
-            $this->context = new ActionContext($validated, $args);
+            $this->context = new ActionContext($validated, $args, $data);
 
             $result = $this->execute();
 

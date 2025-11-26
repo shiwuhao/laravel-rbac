@@ -24,7 +24,7 @@ class GetUserPermissions extends BaseAction
     {
         $userModel = config('rbac.models.user');
 
-        return $userModel::with(['roles.permissions', 'permissions'])
+        return $userModel::with(['roles.permissions', 'directPermissions'])
             ->findOrFail($this->context->id());
     }
 }

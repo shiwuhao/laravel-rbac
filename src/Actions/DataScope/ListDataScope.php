@@ -29,9 +29,7 @@ class ListDataScope extends BaseAction
     protected function rules(): array
     {
         return [
-            'keyword' => 'sometimes|string',
-            'type' => 'sometimes|string|in:all,custom,department,department_and_sub,only_self',
-            'per_page' => 'sometimes|integer|min:15|max:100',
+            'per_page' => 'sometimes|integer|min:15|max:1000',
         ];
     }
 
@@ -43,18 +41,9 @@ class ListDataScope extends BaseAction
         $dataScopeModel = config('rbac.models.data_scope');
         $query = $dataScopeModel::query()->withCount(['permissions', 'users']);
 
-        if ($this->context->has('keyword')) {
-            $keyword = $this->context->data('keyword');
-            $query->where(function ($q) use ($keyword) {
-                $q->where('name', 'like', "%{$keyword}%")
-                    ->orWhere('description', 'like', "%{$keyword}%");
-            });
-        }
+        // 应用查询过滤器（应用层通过配置注入搜索逻辑）
+        $query = $this->applyQueryFilter($query, $this->context->raw());
 
-        if ($this->context->has('type')) {
-            $query->where('type', $this->context->data('type'));
-        }
-
-        return $query->paginate($this->context->data('per_page', 15));
+        return $query->paginate($this->getPerPage());
     }
 }

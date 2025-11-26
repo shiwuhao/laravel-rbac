@@ -1858,6 +1858,139 @@ foreach ($permissionIds as $id) {
 
 ---
 
+### 7. 自定义查询过滤器
+
+扩展包支持通过配置注入自定义查询逻辑，实现统一的搜索规范，而不破坏核心结构。
+
+#### 配置查询过滤器
+
+在应用层的 `config/rbac.php` 中配置：
+
+```php
+return [
+    // ... 其他配置
+
+    /**
+     * 查询过滤器回调（在执行查询前应用）
+     * 
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构造器
+     * @param array $params 请求参数
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    'query_filter' => function (\Illuminate\Database\Eloquent\Builder $query, array $params) {
+        $model = $query->getModel();
+        
+        // 如果模型有 search scope，直接使用
+        if (method_exists($model, 'scopeSearch')) {
+            return $query->search($params);
+        }
+        
+        return $query;
+    },
+];
+```
+
+#### 使用场景
+
+过滤器会自动应用在所有列表查询的 Action 上：
+
+- `ListRole` - 角色列表
+- `ListPermission` - 权限列表
+- `ListDataScope` - 数据范围列表
+- `ListUserPermissions` - 用户权限列表
+
+#### 实现示例
+
+**1. 在模型中定义 `scopeSearch`：**
+
+```php
+// app/Models/Role.php
+use Illuminate\Database\Eloquent\Builder;
+
+class Role extends Model
+{
+    /**
+     * 搜索过滤器
+     */
+    public function scopeSearch(Builder $query, array $params): Builder
+    {
+        // 关键词搜索
+        if (isset($params['keyword'])) {
+            $query->where('name', 'like', "%{$params['keyword']}%");
+        }
+        
+        // 守卫名称过滤
+        if (isset($params['guard_name'])) {
+            $query->where('guard_name', $params['guard_name']);
+        }
+        
+        // 状态过滤
+        if (isset($params['status'])) {
+            $query->where('status', $params['status']);
+        }
+        
+        return $query;
+    }
+}
+```
+
+**2. 或使用 SearchScopesTrait（推荐）：**
+
+```php
+// app/Models/Role.php
+use App\Traits\SearchScopesTrait;
+
+class Role extends Model
+{
+    use SearchScopesTrait;
+    
+    /**
+     * 可搜索字段
+     */
+    protected $searchable = [
+        'keyword' => ['name', 'description'],  // 模糊匹配
+        'guard_name' => 'exact',                // 精确匹配
+        'status' => 'exact',
+    ];
+}
+```
+
+**3. 前端调用：**
+
+```http
+GET /api/rbac/roles?keyword=admin&status=1&guard_name=web&per_page=20
+```
+
+**4. 底层执行：**
+
+```php
+// 扩展包内部（ListRole Action）
+$query = Role::query()->withCount(['permissions', 'users']);
+
+// 应用过滤器（自动调用 scopeSearch）
+$query = $this->applyQueryFilter($query, $request->all());
+
+// 分页
+$roles = $query->paginate(20);
+```
+
+#### 优势
+
+✅ **职责分离** - 扩展包不关心搜索实现，应用层完全控制  
+✅ **代码精简** - 扩展包仅保留核心逻辑（预加载 + 过滤器 + 分页）  
+✅ **灵活扩展** - 应用层可自由定义任意搜索条件  
+✅ **统一规范** - 所有模型都可使用同一套 `scopeSearch` 方法  
+✅ **向后兼容** - 未配置时行为不变
+
+#### 注意事项
+
+- 过滤器仅在列表查询时生效，不影响单个资源查询
+- 过滤器接收的是验证后的参数，已通过 Action 的 `rules()` 验证
+- 建议在 `scopeSearch` 中做参数校验，避免 SQL 注入
+- 如果不需要搜索功能，配置中不设置 `query_filter` 即可
+
+---
+
 ## 常见问题
 
 ### Q1: 如何实现超级管理员？
