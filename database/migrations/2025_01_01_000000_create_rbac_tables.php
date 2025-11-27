@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('name', 100)->comment('角色名称');
             $table->string('slug', 100)->comment('角色标识符');
             $table->text('description')->nullable()->comment('角色描述');
+            $table->boolean('enabled')->default(true)->comment('是否启用');
             $table->string('guard_name', 50)->default('web')->comment('守卫名称');
             $table->timestamps();
             $table->softDeletes();
@@ -110,25 +111,6 @@ return new class extends Migration
             $table->index('user_id');
         });
 
-        // 权限数据范围关联表
-        Schema::create($tables['permission_data_scope'], function (Blueprint $table) use ($tables) {
-            $table->unsignedBigInteger('permission_id');
-            $table->unsignedBigInteger('data_scope_id');
-            $table->text('constraint')->nullable()->comment('额外约束条件');
-            $table->timestamps();
-
-            $table->foreign('permission_id')
-                ->references('id')
-                ->on($tables['permissions'])
-                ->onDelete('cascade');
-
-            $table->foreign('data_scope_id')
-                ->references('id')
-                ->on($tables['data_scopes'])
-                ->onDelete('cascade');
-
-            $table->primary(['permission_id', 'data_scope_id']);
-        });
 
         // 角色数据范围关联表
         Schema::create($tables['role_data_scope'], function (Blueprint $table) use ($tables) {
@@ -176,7 +158,6 @@ return new class extends Migration
 
         Schema::dropIfExists($tables['user_data_scope']);
         Schema::dropIfExists($tables['role_data_scope']);
-        Schema::dropIfExists($tables['permission_data_scope']);
         Schema::dropIfExists($tables['user_permission']);
         Schema::dropIfExists($tables['user_role']);
         Schema::dropIfExists($tables['role_permission']);

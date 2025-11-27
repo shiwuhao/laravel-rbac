@@ -13,7 +13,7 @@ use Rbac\Contracts\PermissionContract;
 
 /**
  * 角色模型
- * 
+ *
  * @property int $id
  * @property string $name
  * @property string $slug
@@ -32,12 +32,14 @@ class Role extends Model implements RoleContract
         'slug',
         'description',
         'guard_name',
+        'enabled',
     ];
 
     protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'created_at' => 'datetime:Y-m-d H:i:s',
+        'updated_at' => 'datetime:Y-m-d H:i:s',
+        'deleted_at' => 'datetime:Y-m-d H:i:s',
+        'enabled' => 'boolean',
     ];
 
     /**
@@ -139,7 +141,7 @@ class Role extends Model implements RoleContract
     public function givePermission(string|array|PermissionContract $permissions): self
     {
         $permissionModel = config('rbac.models.permission');
-        
+
         $permissions = collect(\Arr::wrap($permissions))
             ->map(function ($permission) use ($permissionModel) {
                 if (is_string($permission)) {
@@ -161,7 +163,7 @@ class Role extends Model implements RoleContract
     public function revokePermission(string|array|PermissionContract $permissions): self
     {
         $permissionModel = config('rbac.models.permission');
-        
+
         $permissions = collect(\Arr::wrap($permissions))
             ->map(function ($permission) use ($permissionModel) {
                 if (is_string($permission)) {
@@ -183,7 +185,7 @@ class Role extends Model implements RoleContract
     public function syncPermissions(array $permissions): self
     {
         $permissionModel = config('rbac.models.permission');
-        
+
         $permissionIds = collect($permissions)
             ->map(function ($permission) use ($permissionModel) {
                 if (is_string($permission)) {

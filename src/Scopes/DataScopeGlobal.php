@@ -90,11 +90,8 @@ class DataScopeGlobal implements Scope
             return $request->attributes->get($cacheKey);
         }
 
-        $permissionModel = config('rbac.models.permission');
         $dataScopeModel = config('rbac.models.data_scope');
 
-        $permission = $permissionModel::bySlug($permissionSlug)->first();
-        $permissionScopes = $permission ? $permission->dataScopes : collect();
         // 用户直授范围
         $userScopes = $dataScopeModel::whereHas('users', function ($q) use ($user) {
             $q->where('user_id', $user->getKey());
@@ -102,22 +99,12 @@ class DataScopeGlobal implements Scope
         // 角色继承范围
         $roleScopes = collect();
         if (method_exists($user, 'roles')) {
-            $roles = $user->roles->load('dataScopes');
+            $roles = $user->roles()->where('enabled', true)->with('dataScopes')->get();
             $roleScopes = $roles->flatMap->dataScopes;
         }
         // 并集（用户直授 ∪ 角色继承）
-        $subjectUnion = $userScopes->merge($roleScopes)->unique('id');
+        $effective = $userScopes->merge($roleScopes)->unique('id')->values();
 
-        // 严格交集：两侧任一为空则为空
-        if ($permissionScopes->isEmpty() || $subjectUnion->isEmpty()) {
-            $effective = collect();
-        } else {
-            $effective = $subjectUnion->filter(function ($scope) use ($permissionScopes) {
-                return $permissionScopes->contains('id', $scope->id);
-            });
-        }
-
-        $effective = $effective->values();
         $request->attributes->set($cacheKey, $effective);
         return $effective;
     }

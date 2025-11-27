@@ -63,18 +63,31 @@ trait HasRolesAndPermissions
         )->withPivot('constraint')->withTimestamps();
     }
 
-
-
     /**
-     * 检查用户是否具有指定角色
+     * 获取用户启用中的角色集合（带简单缓存，当前请求内复用）
      */
-    public function hasRole(string|RoleContract $role): bool
+    protected function getEnabledRoles(): Collection
     {
-        if (is_string($role)) {
-            return $this->roles->contains('slug', $role);
+        if (property_exists($this, 'enabledRolesCache') && $this->enabledRolesCache instanceof Collection) {
+            return $this->enabledRolesCache;
         }
 
-        return $this->roles->contains('id', $role->id);
+        $roles = $this->roles()->where('enabled', true)->get();
+        $this->enabledRolesCache = $roles;
+
+        return $roles;
+    }
+
+
+    public function hasRole(string|RoleContract $role): bool
+    {
+        $roles = $this->getEnabledRoles();
+
+        if (is_string($role)) {
+            return $roles->contains('slug', $role);
+        }
+
+        return $roles->contains('id', $role->id);
     }
 
     /**
@@ -82,8 +95,11 @@ trait HasRolesAndPermissions
      */
     public function hasAnyRole(array $roles): bool
     {
+        $enabledRoles = $this->getEnabledRoles();
+
         foreach ($roles as $role) {
-            if ($this->hasRole($role)) {
+            $slug = $role instanceof RoleContract ? $role->slug : $role;
+            if ($enabledRoles->contains('slug', $slug)) {
                 return true;
             }
         }
@@ -96,8 +112,11 @@ trait HasRolesAndPermissions
      */
     public function hasAllRoles(array $roles): bool
     {
+        $enabledRoles = $this->getEnabledRoles();
+
         foreach ($roles as $role) {
-            if (!$this->hasRole($role)) {
+            $slug = $role instanceof RoleContract ? $role->slug : $role;
+            if (! $enabledRoles->contains('slug', $slug)) {
                 return false;
             }
         }
@@ -196,10 +215,12 @@ trait HasRolesAndPermissions
 
         if ($cacheDriver === 'redis' || $cacheDriver === 'memcached') {
             return Cache::remember($cacheKey, config('rbac.cache.expiration_time'), function () {
-                // 预加载关联关系
-                $this->loadMissing(['roles.permissions', 'directPermissions']);
+                // 预加载关联关系（仅启用角色）
+                $this->loadMissing(['roles' => function ($q) {
+                    $q->where('enabled', true);
+                }, 'roles.permissions', 'directPermissions']);
 
-                // 获取角色权限
+                // 获取启用角色的权限
                 $rolePermissions = $this->roles->flatMap->permissions;
 
                 // 合并直接权限并去重
@@ -211,10 +232,12 @@ trait HasRolesAndPermissions
 
         return Cache::tags(['rbac', 'user_permissions'])
             ->remember($cacheKey, config('rbac.cache.expiration_time'), function () {
-                // 预加载关联关系
-                $this->loadMissing(['roles.permissions', 'directPermissions']);
+                // 预加载关联关系（仅启用角色）
+                $this->loadMissing(['roles' => function ($q) {
+                    $q->where('enabled', true);
+                }, 'roles.permissions', 'directPermissions']);
 
-                // 获取角色权限
+                // 获取启用角色的权限
                 $rolePermissions = $this->roles->flatMap->permissions;
 
                 // 合并直接权限并去重

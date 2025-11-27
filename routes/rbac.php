@@ -71,6 +71,8 @@ Route::prefix('permissions')->name('permissions.')->group(function () {
     Route::delete('/{id}', DeletePermission::class)->name('destroy');
     Route::post('/batch', BatchCreatePermissions::class)->name('batch-store');
     Route::post('/instance', CreateInstancePermission::class)->name('instance-store');
+
+
 });
 
 // DataScope 路由
