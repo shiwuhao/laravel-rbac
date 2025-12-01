@@ -63,8 +63,8 @@ class SyncDataScopesToUser extends BaseAction
             $syncData[$dataScopeId] = ['constraint' => $constraint];
         }
 
-        $user->dataScopes()->sync($syncData);
+        $user->directDataScopes()->sync($syncData);
 
-        return $user->load(['dataScopes']);
+        return $user->load(['directDataScopes']);
     }
 }

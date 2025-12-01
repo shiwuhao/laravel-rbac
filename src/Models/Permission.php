@@ -86,19 +86,6 @@ class Permission extends Model implements PermissionContract
     }
 
     /**
-     * 数据范围关联
-     */
-    public function dataScopes(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            config('rbac.models.data_scope'),
-            config('rbac.tables.permission_data_scope'),
-            'permission_id',
-            'data_scope_id'
-        )->withPivot('constraint')->withTimestamps();
-    }
-
-    /**
      * 多态关联：资源实例（报表、菜单等）
      */
     public function resourceInstance()

@@ -3,10 +3,12 @@
 namespace Rbac\Actions\DataScope;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Enum;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 use Rbac\Contracts\DataScopeContract;
+use Rbac\Enums\DataScopeType;
 
 /**
  * 更新数据范围
@@ -35,7 +37,7 @@ class UpdateDataScope extends BaseAction
             'name' => 'sometimes|string|max:255',
             'slug' => "sometimes|string|max:100|unique:{$dataScopeTable},slug,{$dataScopeId}",
             'description' => 'nullable|string|max:500',
-            'type' => 'sometimes|string|in:all,custom,department,department_and_sub,only_self',
+            'type' => ['sometimes', new Enum(DataScopeType::class)],
             'config' => 'nullable|array',
         ];
     }

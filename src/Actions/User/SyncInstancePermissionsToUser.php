@@ -1,26 +1,27 @@
 <?php
 
-namespace Rbac\Actions\Role;
+namespace Rbac\Actions\User;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
-use Rbac\Contracts\RoleContract;
 
 /**
- * 为角色分配实例权限（批量）
+ * 同步用户的实例权限（批量）
+ *
+ * 会移除用户现有的所有实例权限，只保留本次同步的权限
  *
  * @example
- * AssignInstancePermissionToRole::handle([
+ * SyncInstancePermissionsToUser::handle([
  *     'permissions' => [
  *         ['slug' => 'menu:access', 'resource_type' => 'App\\Models\\Menu', 'resource_id' => 1],
  *         ['slug' => 'menu:access', 'resource_type' => 'App\\Models\\Menu', 'resource_id' => 2],
  *     ]
- * ], $roleId);
+ * ], $userId);
  */
-#[Permission('role:assign-instance-permissions', '为角色分配实例权限')]
-class AssignInstancePermissionToRole extends BaseAction
+#[Permission('user:sync-instance-permissions', '同步用户实例权限')]
+class SyncInstancePermissionsToUser extends BaseAction
 {
     /**
      * 验证规则
@@ -36,19 +37,22 @@ class AssignInstancePermissionToRole extends BaseAction
     }
 
     /**
-     * 执行分配
+     * 执行同步
      */
-    protected function execute(): RoleContract&Model
+    protected function execute(): Model
     {
-        $roleModel = config('rbac.models.role');
+        $userModel = config('rbac.models.user');
         $permissionModel = config('rbac.models.permission');
 
-        $role = $roleModel::findOrFail($this->context->id());
-        $permissions = $this->context->data('permissions');
+        // 从路由参数获取 user_id
+        $user = $userModel::findOrFail($this->context->id());
 
-        return DB::transaction(function () use ($role, $permissionModel, $permissions) {
+        // 获取批量权限数据
+        $requestedPermissions = $this->context->data('permissions');
+
+        return DB::transaction(function () use ($user, $permissionModel, $requestedPermissions) {
             // 1. 提取所有唯一的权限标识
-            $uniqueSlugs = collect($permissions)->pluck('slug')->unique()->values();
+            $uniqueSlugs = collect($requestedPermissions)->pluck('slug')->unique()->values();
 
             // 2. 批量查询基础权限（无 resource_type/resource_id）
             $basePermissions = $permissionModel::whereIn('slug', $uniqueSlugs)
@@ -58,7 +62,7 @@ class AssignInstancePermissionToRole extends BaseAction
                 ->keyBy('slug');
 
             // 3. 构建需要查询的实例权限条件（去重）
-            $instanceConditions = collect($permissions)->map(function ($item) {
+            $instanceConditions = collect($requestedPermissions)->map(function ($item) {
                 return [
                     'slug' => $item['slug'],
                     'resource_type' => $item['resource_type'],
@@ -123,18 +127,28 @@ class AssignInstancePermissionToRole extends BaseAction
                 $existingPermissions = array_merge($existingPermissions, $newlyCreated);
             }
 
-            // 7. 分配权限给角色（不移除现有权限）
-            $permissionIds = collect($existingPermissions)->pluck('id')->unique()->values();
-            $role->permissions()->syncWithoutDetaching($permissionIds);
+            // 7. 获取用户当前所有实例权限的 ID
+            $permissionsTable = config('rbac.tables.permissions', 'permissions');
+            $currentInstancePermissionIds = $user->directPermissions()
+                ->whereNotNull("{$permissionsTable}.resource_type")
+                ->whereNotNull("{$permissionsTable}.resource_id")
+                ->pluck("{$permissionsTable}.id");
 
-            // 8. 清除关联用户的缓存
-            $role->users()->each(function ($user) {
-                if (method_exists($user, 'forgetCachedPermissions')) {
-                    $user->forgetCachedPermissions();
-                }
-            });
+            // 8. 同步权限给用户（移除旧的实例权限，只保留新的）
+            $newPermissionIds = collect($existingPermissions)->pluck('id')->unique()->values();
 
-            return $role->load('permissions');
+            // 先移除旧的实例权限
+            $user->directPermissions()->detach($currentInstancePermissionIds);
+
+            // 再添加新的实例权限
+            $user->directPermissions()->syncWithoutDetaching($newPermissionIds);
+
+            // 9. 清理缓存
+            if (method_exists($user, 'forgetCachedPermissions')) {
+                $user->forgetCachedPermissions();
+            }
+
+            return $user->load('directPermissions');
         });
     }
 
@@ -147,6 +161,7 @@ class AssignInstancePermissionToRole extends BaseAction
             return [];
         }
 
+        // 构建 OR 查询
         $query = $permissionModel::query();
 
         foreach ($conditions as $condition) {
@@ -159,9 +174,10 @@ class AssignInstancePermissionToRole extends BaseAction
 
         $permissions = $query->get();
 
+        // 按组合键索引
         $indexed = [];
         foreach ($permissions as $permission) {
-            $key = $permission->slug . '|' . $permission->resource_type . '|' . $permission->resource_id;
+            $key = $permission->slug.'|'.$permission->resource_type.'|'.$permission->resource_id;
             $indexed[$key] = $permission;
         }
 

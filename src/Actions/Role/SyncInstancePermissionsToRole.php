@@ -9,18 +9,20 @@ use Rbac\Attributes\Permission;
 use Rbac\Contracts\RoleContract;
 
 /**
- * 为角色分配实例权限（批量）
+ * 同步角色的实例权限（批量）
+ *
+ * 会移除角色现有的所有实例权限，只保留本次同步的权限
  *
  * @example
- * AssignInstancePermissionToRole::handle([
+ * SyncInstancePermissionsToRole::handle([
  *     'permissions' => [
  *         ['slug' => 'menu:access', 'resource_type' => 'App\\Models\\Menu', 'resource_id' => 1],
  *         ['slug' => 'menu:access', 'resource_type' => 'App\\Models\\Menu', 'resource_id' => 2],
  *     ]
  * ], $roleId);
  */
-#[Permission('role:assign-instance-permissions', '为角色分配实例权限')]
-class AssignInstancePermissionToRole extends BaseAction
+#[Permission('role:sync-instance-permissions', '同步角色实例权限')]
+class SyncInstancePermissionsToRole extends BaseAction
 {
     /**
      * 验证规则
@@ -36,7 +38,7 @@ class AssignInstancePermissionToRole extends BaseAction
     }
 
     /**
-     * 执行分配
+     * 执行同步
      */
     protected function execute(): RoleContract&Model
     {
@@ -123,11 +125,23 @@ class AssignInstancePermissionToRole extends BaseAction
                 $existingPermissions = array_merge($existingPermissions, $newlyCreated);
             }
 
-            // 7. 分配权限给角色（不移除现有权限）
-            $permissionIds = collect($existingPermissions)->pluck('id')->unique()->values();
-            $role->permissions()->syncWithoutDetaching($permissionIds);
+            // 7. 获取角色当前所有实例权限的 ID
+            $permissionsTable = config('rbac.tables.permissions', 'permissions');
+            $currentInstancePermissionIds = $role->permissions()
+                ->whereNotNull("{$permissionsTable}.resource_type")
+                ->whereNotNull("{$permissionsTable}.resource_id")
+                ->pluck("{$permissionsTable}.id");
 
-            // 8. 清除关联用户的缓存
+            // 8. 同步权限给角色（移除旧的实例权限，只保留新的）
+            $newPermissionIds = collect($existingPermissions)->pluck('id')->unique()->values();
+
+            // 先移除旧的实例权限
+            $role->permissions()->detach($currentInstancePermissionIds);
+
+            // 再添加新的实例权限
+            $role->permissions()->syncWithoutDetaching($newPermissionIds);
+
+            // 9. 清除关联用户的缓存
             $role->users()->each(function ($user) {
                 if (method_exists($user, 'forgetCachedPermissions')) {
                     $user->forgetCachedPermissions();

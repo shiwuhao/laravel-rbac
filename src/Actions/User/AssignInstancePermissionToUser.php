@@ -10,23 +10,15 @@ use Rbac\Attributes\Permission;
 /**
  * 为用户分配实例权限
  *
- * 支持单个或批量分配，自动处理权限创建和去重
+ * 支持批量分配，自动处理权限创建和去重
  *
- * @example 单个分配
- * AssignInstancePermissionToUser::handle([
- *     'user_id' => 1,
- *     'permission_slug' => 'report:view',
- *     'resource_type' => 'App\Models\Report',
- *     'resource_id' => 123,
- * ]);
  * @example 批量分配
  * AssignInstancePermissionToUser::handle([
- *     'user_id' => 1,
  *     'permissions' => [
  *         ['slug' => 'menu:access', 'resource_type' => 'App\Models\Menu', 'resource_id' => 1],
  *         ['slug' => 'menu:access', 'resource_type' => 'App\Models\Menu', 'resource_id' => 2],
  *     ]
- * ]);
+ * ], $userId);
  */
 #[Permission('user:assign-instance-permissions', '分配实例权限给用户')]
 class AssignInstancePermissionToUser extends BaseAction
@@ -36,18 +28,9 @@ class AssignInstancePermissionToUser extends BaseAction
      */
     protected function rules(): array
     {
-        $userTable = config('rbac.tables.users', 'users');
-
         return [
-            'user_id' => "required|exists:{$userTable},id",
-
-            // 单个权限参数（兼容旧接口）
-            'permission_slug' => 'required_without:permissions|string',
-            'resource_type' => 'required_without:permissions|string',
-            'resource_id' => 'required_without:permissions|integer',
-
             // 批量权限参数
-            'permissions' => 'required_without:permission_slug|array|min:1',
+            'permissions' => 'required|array|min:1',
             'permissions.*.slug' => 'required|string',
             'permissions.*.resource_type' => 'required|string',
             'permissions.*.resource_id' => 'required|integer',
@@ -62,10 +45,11 @@ class AssignInstancePermissionToUser extends BaseAction
         $userModel = config('rbac.models.user');
         $permissionModel = config('rbac.models.permission');
 
-        $user = $userModel::findOrFail($this->context->data('user_id'));
+        // 从路由参数获取 user_id
+        $user = $userModel::findOrFail($this->context->id());
 
-        // 标准化为批量格式
-        $requestedPermissions = $this->normalizePermissions();
+        // 获取批量权限数据
+        $requestedPermissions = $this->context->data('permissions');
 
         return DB::transaction(function () use ($user, $permissionModel, $requestedPermissions) {
             // 1. 提取所有唯一的权限标识
@@ -97,14 +81,16 @@ class AssignInstancePermissionToUser extends BaseAction
 
             // 5. 找出需要创建的权限
             $toCreate = [];
+            $missingBasePermissions = [];
             foreach ($instanceConditions as $condition) {
                 $key = $condition['slug'].'|'.$condition['resource_type'].'|'.$condition['resource_id'];
 
-                if (! isset($existingPermissions[$key])) {
+                if (!isset($existingPermissions[$key])) {
                     $basePermission = $basePermissions[$condition['slug']] ?? null;
 
-                    if (! $basePermission) {
-                        continue; // 跳过无效的权限标识
+                    if (!$basePermission) {
+                        $missingBasePermissions[] = $condition['slug'];
+                        continue;
                     }
 
                     $toCreate[] = [
@@ -122,8 +108,16 @@ class AssignInstancePermissionToUser extends BaseAction
                 }
             }
 
+            // 如果有缺失的基础权限，抛出异常
+            if (!empty($missingBasePermissions)) {
+                throw new \Exception(
+                    '以下基础权限不存在，无法创建实例权限：'.implode(', ', array_unique($missingBasePermissions)).
+                    '。请先创建基础权限（resource_type 和 resource_id 为 NULL 的权限记录）。'
+                );
+            }
+
             // 6. 批量创建新权限
-            if (! empty($toCreate)) {
+            if (!empty($toCreate)) {
                 $permissionModel::insert($toCreate);
 
                 // 重新查询刚创建的权限
@@ -134,7 +128,7 @@ class AssignInstancePermissionToUser extends BaseAction
                 $existingPermissions = array_merge($existingPermissions, $newlyCreated);
             }
 
-            // 7. 批量分配权限给用户
+            // 7. 分配权限给用户（不移除现有权限）
             $permissionIds = collect($existingPermissions)->pluck('id')->unique()->values();
             $user->directPermissions()->syncWithoutDetaching($permissionIds);
 
@@ -145,24 +139,6 @@ class AssignInstancePermissionToUser extends BaseAction
 
             return $user->load('directPermissions');
         });
-    }
-
-    /**
-     * 标准化权限数据为批量格式
-     */
-    protected function normalizePermissions(): array
-    {
-        // 如果是批量格式，直接返回
-        if ($this->context->has('permissions')) {
-            return $this->context->data('permissions');
-        }
-
-        // 单个权限转为批量格式
-        return [[
-            'slug' => $this->context->data('permission_slug'),
-            'resource_type' => $this->context->data('resource_type'),
-            'resource_id' => $this->context->data('resource_id'),
-        ]];
     }
 
     /**

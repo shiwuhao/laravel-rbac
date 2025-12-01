@@ -15,7 +15,7 @@ use Rbac\Commands\RbacStatusCommand;
 use Rbac\Commands\ClearCacheCommand;
 use Rbac\Commands\InstallCommand;
 use Rbac\Commands\CleanOrphanedPermissionsCommand;
-use Rbac\Commands\QuickSeedCommand;
+use Rbac\Commands\SeedCommand;
 use Rbac\Middleware\PermissionMiddleware;
 use Rbac\Middleware\PermissionCheckMiddleware;
 use Rbac\Middleware\RoleMiddleware;
@@ -86,7 +86,7 @@ class RbacServiceProvider extends ServiceProvider
                 RbacStatusCommand::class,
                 ClearCacheCommand::class,
                 InstallCommand::class,
-                QuickSeedCommand::class,
+                SeedCommand::class,
                 ListPermissionsCommand::class,
                 ScanPermissionsCommand::class,
                 CleanOrphanedPermissionsCommand::class,

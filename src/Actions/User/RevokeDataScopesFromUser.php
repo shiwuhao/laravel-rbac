@@ -44,8 +44,8 @@ class RevokeDataScopesFromUser extends BaseAction
 
         $dataScopeIds = array_values(array_unique(array_map('intval', $this->context->data('data_scope_ids'))));
 
-        $user->dataScopes()->detach($dataScopeIds);
+        $user->directDataScopes()->detach($dataScopeIds);
 
-        return $user->load(['dataScopes']);
+        return $user->load(['directDataScopes']);
     }
 }

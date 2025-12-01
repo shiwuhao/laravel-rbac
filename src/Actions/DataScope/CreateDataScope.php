@@ -3,10 +3,12 @@
 namespace Rbac\Actions\DataScope;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Enum;
 use Rbac\Actions\BaseAction;
 use Rbac\Attributes\Permission;
 use Rbac\Attributes\PermissionGroup;
 use Rbac\Contracts\DataScopeContract;
+use Rbac\Enums\DataScopeType;
 
 /**
  * 创建数据范围
@@ -37,7 +39,7 @@ class CreateDataScope extends BaseAction
             'name' => 'required|string|max:255',
             'slug' => "sometimes|string|max:100|unique:{$dataScopeTable},slug",
             'description' => 'nullable|string|max:500',
-            'type' => 'required|string|in:all,organization,department,personal,custom',
+            'type' => ['required', new Enum(DataScopeType::class)],
             'config' => 'nullable|array',
         ];
     }

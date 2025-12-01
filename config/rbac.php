@@ -16,7 +16,6 @@ return [
         'role_permission' => 'role_permission',
         'user_role' => 'user_role',
         'user_permission' => 'user_permission',
-        'permission_data_scope' => 'permission_data_scope',
         'role_data_scope' => 'role_data_scope',
         'user_data_scope' => 'user_data_scope',
     ],

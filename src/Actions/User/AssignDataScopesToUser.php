@@ -67,11 +67,11 @@ class AssignDataScopesToUser extends BaseAction
         }
 
         if ($replace) {
-            $user->dataScopes()->sync($syncData);
+            $user->directDataScopes()->sync($syncData);
         } else {
-            $user->dataScopes()->syncWithoutDetaching($syncData);
+            $user->directDataScopes()->syncWithoutDetaching($syncData);
         }
 
-        return $user->load(['dataScopes']);
+        return $user->load(['directDataScopes']);
     }
 }

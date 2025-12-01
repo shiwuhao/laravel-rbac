@@ -17,8 +17,7 @@ class InstallCommand extends Command
      */
     protected $signature = 'rbac:install 
                             {--force : 强制重新安装}
-                            {--seed : 同时运行测试数据填充}
-                            {--demo : 包含演示数据}';
+                            {--seed : 同时运行数据填充}';
 
     /**
      * The console command description.
@@ -34,7 +33,6 @@ class InstallCommand extends Command
     {
         $force = $this->option('force');
         $seed = $this->option('seed');
-        $demo = $this->option('demo');
 
         try {
             $this->info('开始安装 RBAC 系统...');
@@ -53,23 +51,22 @@ class InstallCommand extends Command
 
             // 运行数据填充
             if ($seed) {
-                $this->runSeeders($demo);
+                $this->runSeeders();
             }
 
-            $this->info('RBAC 系统安装完成！');
+            $this->info('');
+            $this->info('🎉 RBAC 系统安装完成！');
+            $this->info('');
             
-            if ($seed && $demo) {
-                $this->info('');
-                $this->info('演示用户已创建，可以使用以下账户登录：');
-                $this->table(
-                    ['角色', '邮箱', '密码'],
-                    [
-                        ['超级管理员', 'superadmin@example.com', 'password'],
-                        ['管理员', 'admin@example.com', 'password'],
-                        ['编辑', 'editor@example.com', 'password'],
-                        ['普通用户', 'user@example.com', 'password'],
-                    ]
-                );
+            if ($seed) {
+                $this->info('💡 下一步：');
+                $this->line('  • 使用 php artisan rbac:status 查看系统状态');
+                $this->line('  • 使用 php artisan rbac:list-permissions 查看所有权限');
+                $this->line('  • 访问 /api/rbac/roles 查看角色列表');
+            } else {
+                $this->info('💡 下一步：');
+                $this->line('  • 运行 php artisan rbac:seed 填充测试数据');
+                $this->line('  • 运行 php artisan rbac:seed --type=data-scopes 仅填充数据范围');
             }
 
             return Command::SUCCESS;
@@ -141,20 +138,13 @@ class InstallCommand extends Command
     /**
      * 运行数据填充
      */
-    protected function runSeeders(bool $includeDemo): void
+    protected function runSeeders(): void
     {
         $this->info('运行数据填充...');
         
-        // 运行基础数据填充
-        Artisan::call('db:seed', ['--class' => 'Rbac\\Database\\Seeders\\RbacSeeder']);
-        $this->info('基础数据填充完成');
-
-        // 运行演示数据填充
-        if ($includeDemo) {
-            if ($this->confirm('是否创建演示数据？', false)) {
-                Artisan::call('db:seed', ['--class' => 'Rbac\\Database\\Seeders\\DemoDataSeeder']);
-                $this->info('演示数据填充完成');
-            }
+        if ($this->confirm('是否填充 RBAC 测试数据？', true)) {
+            Artisan::call('rbac:seed', ['--force' => true], $this->getOutput());
+            $this->info('✓ 数据填充完成');
         }
     }
 }

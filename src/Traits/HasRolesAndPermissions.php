@@ -51,7 +51,7 @@ trait HasRolesAndPermissions
     }
 
     /**
-     * 用户数据范围关联
+     * 用户直接数据范围关联
      */
     public function directDataScopes(): BelongsToMany
     {
@@ -61,6 +61,14 @@ trait HasRolesAndPermissions
             'user_id',
             'data_scope_id'
         )->withPivot('constraint')->withTimestamps();
+    }
+
+    /**
+     * 用户数据范围关联（别名，等同于 directDataScopes）
+     */
+    public function dataScopes(): BelongsToMany
+    {
+        return $this->directDataScopes();
     }
 
     /**
@@ -266,7 +274,7 @@ trait HasRolesAndPermissions
         $permissionDataScopes = $userPermission->dataScopes;
 
         // 获取用户直接关联的数据范围
-        $userDataScopes = $this->dataScopes;
+        $userDataScopes = $this->directDataScopes;
 
         // 合并并去重
         return $permissionDataScopes->merge($userDataScopes)->unique('id');
@@ -280,10 +288,10 @@ trait HasRolesAndPermissions
     public function hasDataScope(string|DataScopeContract $dataScope): bool
     {
         if (is_string($dataScope)) {
-            return $this->dataScopes->contains('name', $dataScope);
+            return $this->directDataScopes->contains('name', $dataScope);
         }
 
-        return $this->dataScopes->contains('id', $dataScope->id);
+        return $this->directDataScopes->contains('id', $dataScope->id);
     }
 
     /**
@@ -319,7 +327,7 @@ trait HasRolesAndPermissions
         static::deleting(function ($model) {
             $model->roles()->detach();
             $model->directPermissions()->detach();
-            $model->dataScopes()->detach();
+            $model->directDataScopes()->detach();
             $model->forgetCachedPermissions();
         });
     }

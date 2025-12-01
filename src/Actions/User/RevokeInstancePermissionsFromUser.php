@@ -12,8 +12,8 @@ use Rbac\Attributes\Permission;
  * @example
  * RevokeInstancePermissionsFromUser::handle([
  *     'permissions' => [
- *         ['resource' => 'article', 'resource_id' => 123, 'action' => 'update'],
- *         ['resource' => 'article', 'resource_id' => 124, 'action' => 'update'],
+ *         ['slug' => 'report:access', 'resource_type' => 'report', 'resource_id' => 123],
+ *         ['slug' => 'report:access', 'resource_type' => 'report', 'resource_id' => 124],
  *     ],
  * ], $userId);
  */
@@ -27,9 +27,9 @@ class RevokeInstancePermissionsFromUser extends BaseAction
     {
         return [
             'permissions' => 'required|array',
-            'permissions.*.resource' => 'required|string',
+            'permissions.*.slug' => 'required|string',
+            'permissions.*.resource_type' => 'required|string',
             'permissions.*.resource_id' => 'required|integer',
-            'permissions.*.action' => 'required|string',
         ];
     }
 
@@ -45,21 +45,29 @@ class RevokeInstancePermissionsFromUser extends BaseAction
         $permissions = $this->context->data('permissions');
 
         $permissionIds = [];
+        $notFoundPermissions = [];
 
         foreach ($permissions as $item) {
-            $slug = $item['resource'].':'.$item['action'];
-
-            $permission = $permissionModel::where('slug', $slug)
-                ->where('resource_type', $item['resource'])
+            $permission = $permissionModel::where('slug', $item['slug'])
+                ->where('resource_type', $item['resource_type'])
                 ->where('resource_id', $item['resource_id'])
                 ->first();
 
             if ($permission) {
                 $permissionIds[] = $permission->id;
+            } else {
+                $notFoundPermissions[] = "{$item['slug']}|{$item['resource_type']}|{$item['resource_id']}";
             }
         }
 
-        if (! empty($permissionIds)) {
+        // 如果所有权限都不存在，抛出异常
+        if (empty($permissionIds) && !empty($notFoundPermissions)) {
+            throw new \Exception(
+                '以下实例权限不存在，无法撤销：' . implode(', ', $notFoundPermissions)
+            );
+        }
+
+        if (!empty($permissionIds)) {
             $user->directPermissions()->detach($permissionIds);
         }
 

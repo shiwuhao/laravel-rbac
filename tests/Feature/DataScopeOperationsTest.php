@@ -4,17 +4,16 @@ namespace Rbac\Tests\Feature;
 
 use PHPUnit\Framework\Attributes\Test;
 
+use Rbac\Actions\Role\RevokeDataScopesFromRole;
+use Rbac\Actions\User\RevokeDataScopesFromUser;
 use Rbac\Tests\TestCase;
 use Rbac\Tests\Models\User;
 use Rbac\Models\Role;
-use Rbac\Models\Permission;
 use Rbac\Models\DataScope;
 use Rbac\Actions\Role\AssignDataScopesToRole;
 use Rbac\Actions\Role\SyncDataScopesToRole;
-use Rbac\Actions\Role\RevokeDataScopeFromRole;
 use Rbac\Actions\User\AssignDataScopesToUser;
 use Rbac\Actions\User\SyncDataScopesToUser;
-use Rbac\Actions\User\RevokeDataScopeFromUser;
 use Rbac\Enums\GuardType;
 use Rbac\Enums\DataScopeType;
 
@@ -95,7 +94,7 @@ class DataScopeOperationsTest extends TestCase
 
         $role->dataScopes()->attach($dataScope->id);
 
-        $action = new RevokeDataScopeFromRole();
+        $action = new RevokeDataScopesFromRole();
         $result = $action->handle([
             'data_scope_id' => $dataScope->id,
         ], $role->id);
@@ -144,15 +143,15 @@ class DataScopeOperationsTest extends TestCase
             'type' => DataScopeType::DEPARTMENT,
         ]);
 
-        $user->dataScopes()->attach($scope1->id);
+        $user->directDataScopes()->attach($scope1->id);
 
         $action = new SyncDataScopesToUser();
         $result = $action->handle([
             'data_scope_ids' => [$scope2->id],
         ], $user->id);
 
-        $this->assertEquals(1, $result->dataScopes()->count());
-        $this->assertEquals($scope2->id, $result->dataScopes()->first()->id);
+        $this->assertEquals(1, $result->directDataScopes()->count());
+        $this->assertEquals($scope2->id, $result->directDataScopes()->first()->id);
     }
 
     #[Test]
@@ -169,13 +168,13 @@ class DataScopeOperationsTest extends TestCase
             'type' => DataScopeType::PERSONAL,
         ]);
 
-        $user->dataScopes()->attach($dataScope->id);
+        $user->directDataScopes()->attach($dataScope->id);
 
-        $action = new RevokeDataScopeFromUser();
+        $action = new RevokeDataScopesFromUser();
         $result = $action->handle([
             'data_scope_ids' => [$dataScope->id],
         ], $user->id);
 
-        $this->assertEquals(0, $result->dataScopes()->count());
+        $this->assertEquals(0, $result->directDataScopes()->count());
     }
 }

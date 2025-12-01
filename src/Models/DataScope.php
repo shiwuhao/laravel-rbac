@@ -66,19 +66,6 @@ class DataScope extends Model implements DataScopeContract
     }
 
     /**
-     * 权限关联
-     */
-    public function permissions(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            config('rbac.models.permission'),
-            config('rbac.tables.permission_data_scope'),
-            'data_scope_id',
-            'permission_id'
-        )->withPivot('constraint')->withTimestamps();
-    }
-
-    /**
      * 用户关联
      */
     public function users(): BelongsToMany

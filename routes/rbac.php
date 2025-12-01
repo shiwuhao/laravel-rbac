@@ -18,6 +18,7 @@ use Rbac\Actions\Role\{
     RevokeInstancePermissionsFromRole,
     SyncPermissionsToRole,
     SyncDataScopesToRole,
+    SyncInstancePermissionsToRole,
     CreateRole,
     DeleteRole,
     ListRole,
@@ -36,6 +37,7 @@ use Rbac\Actions\User\{
     SyncDataScopesToUser,
     AssignInstancePermissionToUser,
     RevokeInstancePermissionsFromUser,
+    SyncInstancePermissionsToUser,
     GetUserPermissions,
     ListUserPermissions
 };
@@ -57,9 +59,10 @@ Route::prefix('roles')->name('roles.')->middleware('permission.check')->group(fu
     Route::delete('/{id}/data-scopes', RevokeDataScopesFromRole::class)->name('revoke-data-scopes');
     Route::put('/{id}/data-scopes', SyncDataScopesToRole::class)->name('sync-data-scopes');
 
-    // 实例权限管理（支持单个或批量）
+    // 实例权限管理
     Route::post('/{id}/instance-permissions', AssignInstancePermissionToRole::class)->name('assign-instance-permissions');
     Route::delete('/{id}/instance-permissions', RevokeInstancePermissionsFromRole::class)->name('revoke-instance-permissions');
+    Route::put('/{id}/instance-permissions', SyncInstancePermissionsToRole::class)->name('sync-instance-permissions');
 });
 
 // Permission 路由
@@ -96,9 +99,10 @@ Route::prefix('users/{user_id}')->name('users.')->group(function () {
     Route::delete('/permissions', RevokePermissionsFromUser::class)->name('revoke-permissions');
     Route::put('/permissions', SyncPermissionsToUser::class)->name('sync-permissions');
 
-    // 实例权限管理（支持单个或批量）
+    // 实例权限管理
     Route::post('/instance-permissions', AssignInstancePermissionToUser::class)->name('assign-instance-permissions');
     Route::delete('/instance-permissions', RevokeInstancePermissionsFromUser::class)->name('revoke-instance-permissions');
+    Route::put('/instance-permissions', SyncInstancePermissionsToUser::class)->name('sync-instance-permissions');
 
     // 数据范围管理
     Route::post('/data-scopes', AssignDataScopesToUser::class)->name('assign-data-scopes');

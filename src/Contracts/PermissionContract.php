@@ -17,11 +17,6 @@ interface PermissionContract
     public function users(): BelongsToMany;
 
     /**
-     * 数据范围关联
-     */
-    public function dataScopes(): BelongsToMany;
-
-    /**
      * 检查是否为写操作
      */
     public function isWriteOperation(): bool;

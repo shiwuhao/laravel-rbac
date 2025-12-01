@@ -94,7 +94,6 @@ class CleanOrphanedPermissionsCommand extends Command
             // 先清关联，再删权限
             DB::table($tables['role_permission'])->whereIn('permission_id', $orphans)->delete();
             DB::table($tables['user_permission'])->whereIn('permission_id', $orphans)->delete();
-            DB::table($tables['permission_data_scope'])->whereIn('permission_id', $orphans)->delete();
             $permissionModel::whereIn('id', $orphans)->delete();
         });
 

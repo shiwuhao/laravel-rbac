@@ -41,7 +41,7 @@ class GetUserPermissions extends BaseAction
             ->findOrFail($this->context->id());
 
         return [
-            'user' => $user,
+            'user' => $user->withoutRelations(),  // 清除所有关联，只返回用户模型的基本属性
             // 角色详细信息
             'roles' => $user->roles->map(function ($role) {
                 return [

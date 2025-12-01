@@ -9,11 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 interface DataScopeContract
 {
     /**
-     * 权限关联
-     */
-    public function permissions(): BelongsToMany;
-
-    /**
      * 用户关联
      */
     public function users(): BelongsToMany;

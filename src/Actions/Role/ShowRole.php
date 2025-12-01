@@ -21,14 +21,14 @@ class ShowRole extends BaseAction
     /**
      * 获取角色详情
      *
-     * @return RoleContract&Model 返回配置的角色模型实例，含权限与用户数统计
+     * @return RoleContract&Model 返回配置的角色模型实例，含权限、数据范围与用户数统计
      */
     protected function execute(): RoleContract&Model
     {
         $roleModel = config('rbac.models.role');
 
-        return $roleModel::withCount(['permissions', 'users'])
-            ->with('permissions')
+        return $roleModel::withCount(['permissions', 'users', 'dataScopes'])
+            ->with(['permissions', 'dataScopes'])
             ->findOrFail($this->context->id());
     }
 }

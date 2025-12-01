@@ -90,9 +90,7 @@ class ListUserPermissions extends BaseAction
             });
 
         return [
-            'id' => $user->id,
-            'name' => $user->name ?? null,
-            'email' => $user->email ?? null,
+            'user' => $user->withoutRelations(),
 
             // 角色简要信息
             'roles' => $user->roles->map(function ($role) {
