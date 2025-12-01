@@ -2,6 +2,8 @@
 
 namespace Rbac\Tests\Feature;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use Rbac\Tests\TestCase;
 use Rbac\Tests\Models\User;
 use Rbac\Models\Role;
@@ -25,7 +27,7 @@ class BatchOperationsTest extends TestCase
         $this->setUpUserTable();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_batch_create_permissions()
     {
         $action = new BatchCreatePermissions();
@@ -40,7 +42,7 @@ class BatchOperationsTest extends TestCase
         $this->assertEquals('查看文章', $result->first()->name);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_instance_permission()
     {
         $action = new CreateInstancePermission();
@@ -59,7 +61,7 @@ class BatchOperationsTest extends TestCase
         $this->assertEquals(1, $result->resource_id);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_batch_delete_roles()
     {
         $role1 = Role::create([
@@ -85,7 +87,7 @@ class BatchOperationsTest extends TestCase
         $this->assertDatabaseMissing(config('rbac.tables.roles'), ['id' => $role2->id, 'deleted_at' => null]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_batch_delete_permissions()
     {
         $perm1 = Permission::create([
@@ -115,7 +117,7 @@ class BatchOperationsTest extends TestCase
         $this->assertSoftDeleted(config('rbac.tables.permissions'), ['id' => $perm2->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_batch_delete_data_scopes()
     {
         $scope1 = DataScope::create([

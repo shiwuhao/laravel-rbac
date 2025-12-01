@@ -2,6 +2,8 @@
 
 namespace Rbac\Tests\Feature;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use Rbac\Tests\TestCase;
 use Rbac\Tests\Models\User;
 use Rbac\Models\Role;
@@ -18,7 +20,7 @@ class CacheTest extends TestCase
         $this->setUpUserTable();
     }
 
-    /** @test */
+    #[Test]
     public function it_caches_user_permissions()
     {
         $user = User::create([
@@ -46,7 +48,7 @@ class CacheTest extends TestCase
         $this->assertEquals($permissions1->count(), $permissions2->count());
     }
 
-    /** @test */
+    #[Test]
     public function it_clears_cache_when_permission_changes()
     {
         $user = User::create([
@@ -82,7 +84,7 @@ class CacheTest extends TestCase
         $this->assertEquals($count1 + 1, $count2);
     }
 
-    /** @test */
+    #[Test]
     public function it_clears_cache_when_role_changes()
     {
         $user = User::create([
@@ -118,7 +120,7 @@ class CacheTest extends TestCase
         $this->assertEquals(1, $count2);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_manually_forget_cache()
     {
         $user = User::create([

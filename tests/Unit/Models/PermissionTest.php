@@ -2,6 +2,8 @@
 
 namespace Rbac\Tests\Unit\Models;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use Rbac\Tests\TestCase;
 use Rbac\Models\Permission;
 use Rbac\Models\Role;
@@ -16,7 +18,7 @@ class PermissionTest extends TestCase
         $this->setUpUserTable();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_a_permission()
     {
         $permission = Permission::create([
@@ -36,7 +38,7 @@ class PermissionTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_instance_permission()
     {
         $permission = Permission::create([
@@ -53,7 +55,7 @@ class PermissionTest extends TestCase
         $this->assertFalse($permission->isGeneralPermission());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_generate_slug()
     {
         $slug = Permission::generateSlug('post', 'view');
@@ -63,7 +65,7 @@ class PermissionTest extends TestCase
         $this->assertEquals('post.view.1', $instanceSlug);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_generate_name()
     {
         $name = Permission::generateName('文章', 'view');
@@ -73,7 +75,7 @@ class PermissionTest extends TestCase
         $this->assertEquals('查看文章(#1)', $instanceName);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_check_if_write_operation()
     {
         $viewPerm = Permission::create([
@@ -96,7 +98,7 @@ class PermissionTest extends TestCase
         $this->assertTrue($createPerm->isWriteOperation());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_use_scopes()
     {
         Permission::create([
@@ -131,7 +133,7 @@ class PermissionTest extends TestCase
         $this->assertEquals(2, Permission::readOperations()->count());
     }
 
-    /** @test */
+    #[Test]
     public function it_has_relationships()
     {
         $permission = Permission::create([
@@ -147,7 +149,7 @@ class PermissionTest extends TestCase
         $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsToMany::class, $permission->dataScopes());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_get_full_description()
     {
         $permission = Permission::create([
@@ -172,7 +174,7 @@ class PermissionTest extends TestCase
         $this->assertEquals('编辑文章的权限', $permWithDesc->full_description);
     }
 
-    /** @test */
+    #[Test]
     public function it_supports_soft_deletes()
     {
         $permission = Permission::create([
@@ -190,7 +192,7 @@ class PermissionTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_store_metadata()
     {
         $permission = Permission::create([

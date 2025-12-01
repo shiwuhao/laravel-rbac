@@ -29,8 +29,8 @@ class UpdateRole extends BaseAction
      */
     protected function rules(): array
     {
-        $id = $this->context?->id();
         $roleTable = config('rbac.tables.roles');
+        $roleId = $this->routeParams[0] ?? null;
 
         return [
             'name' => 'sometimes|string|max:100',
@@ -38,10 +38,11 @@ class UpdateRole extends BaseAction
                 'sometimes',
                 'string',
                 'max:100',
-                Rule::unique($roleTable, 'slug')->ignore($id),
+                Rule::unique($roleTable, 'slug')->ignore($roleId),
             ],
             'description' => 'nullable|string',
             'guard_name' => 'sometimes|string|max:50',
+            'enabled' => 'sometimes|boolean',
         ];
     }
 
@@ -60,6 +61,7 @@ class UpdateRole extends BaseAction
             'slug',
             'description',
             'guard_name',
+            'enabled',
         ]));
 
         return $role;

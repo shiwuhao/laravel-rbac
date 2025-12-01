@@ -14,6 +14,7 @@ use Rbac\Contracts\DataScopeContract;
  * @example
  * CreateDataScope::handle([
  *     'name' => '部门数据',
+ *     'slug' => 'department',
  *     'description' => '只能查看本部门数据',
  *     'type' => 'department',
  *     'config' => ['field' => 'department_id'],
@@ -30,8 +31,11 @@ class CreateDataScope extends BaseAction
      */
     protected function rules(): array
     {
+        $dataScopeTable = config('rbac.tables.data_scopes');
+
         return [
             'name' => 'required|string|max:255',
+            'slug' => "sometimes|string|max:100|unique:{$dataScopeTable},slug",
             'description' => 'nullable|string|max:500',
             'type' => 'required|string|in:all,organization,department,personal,custom',
             'config' => 'nullable|array',
@@ -49,6 +53,7 @@ class CreateDataScope extends BaseAction
 
         return $dataScopeModel::create([
             'name' => $this->context->data('name'),
+            'slug' => $this->context->data('slug'),
             'description' => $this->context->data('description'),
             'type' => $this->context->data('type'),
             'config' => $this->context->data('config'),

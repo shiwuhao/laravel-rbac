@@ -13,7 +13,7 @@ use Attribute;
  * @example #[Permission('user:create', '创建用户')]
  * @example #[Permission('user:update', '更新用户', description: '更新用户基本信息')]
  */
-#[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD)]
+#[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD | Attribute::IS_REPEATABLE)]
 class Permission
 {
     /**

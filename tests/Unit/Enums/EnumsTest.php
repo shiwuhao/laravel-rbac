@@ -2,6 +2,8 @@
 
 namespace Rbac\Tests\Unit\Enums;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use Rbac\Tests\TestCase;
 use Rbac\Enums\GuardType;
 use Rbac\Enums\DataScopeType;
@@ -9,14 +11,14 @@ use Rbac\Enums\ActionType;
 
 class EnumsTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function guard_type_enum_has_correct_values()
     {
         $this->assertEquals('web', GuardType::WEB->value);
         $this->assertEquals('api', GuardType::API->value);
     }
 
-    /** @test */
+    #[Test]
     public function data_scope_type_enum_has_correct_values()
     {
         $this->assertEquals('all', DataScopeType::ALL->value);
@@ -26,7 +28,7 @@ class EnumsTest extends TestCase
         $this->assertEquals('custom', DataScopeType::CUSTOM->value);
     }
 
-    /** @test */
+    #[Test]
     public function action_type_enum_has_correct_values()
     {
         $this->assertEquals('view', ActionType::VIEW->value);
@@ -37,7 +39,7 @@ class EnumsTest extends TestCase
         $this->assertEquals('import', ActionType::IMPORT->value);
     }
 
-    /** @test */
+    #[Test]
     public function enums_can_be_instantiated_from_string()
     {
         $webGuard = GuardType::from('web');
@@ -50,7 +52,7 @@ class EnumsTest extends TestCase
         $this->assertEquals(ActionType::VIEW, $viewAction);
     }
 
-    /** @test */
+    #[Test]
     public function enums_can_list_all_cases()
     {        
         $this->assertGreaterThanOrEqual(2, count(GuardType::cases()));

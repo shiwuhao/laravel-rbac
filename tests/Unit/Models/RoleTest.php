@@ -2,6 +2,8 @@
 
 namespace Rbac\Tests\Unit\Models;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use Rbac\Tests\TestCase;
 use Rbac\Models\Role;
 use Rbac\Models\Permission;
@@ -18,7 +20,7 @@ class RoleTest extends TestCase
         $this->setUpUserTable();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_a_role()
     {
         $role = Role::create([
@@ -34,7 +36,7 @@ class RoleTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_assign_permissions_to_role()
     {
         $role = Role::create([
@@ -57,7 +59,7 @@ class RoleTest extends TestCase
         $this->assertTrue($role->hasPermission('post.update'));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_check_multiple_permissions()
     {
         $role = Role::create([
@@ -88,7 +90,7 @@ class RoleTest extends TestCase
         $this->assertTrue($role->hasAnyPermission([$perm1]));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_revoke_permissions()
     {
         $role = Role::create([
@@ -112,7 +114,7 @@ class RoleTest extends TestCase
         $this->assertFalse($role->hasPermission($permission));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_sync_permissions()
     {
         $role = Role::create([
@@ -144,7 +146,7 @@ class RoleTest extends TestCase
         $this->assertTrue($role->hasPermission($perm2));
     }
 
-    /** @test */
+    #[Test]
     public function it_has_relationships()
     {
         $role = Role::create([
@@ -158,7 +160,7 @@ class RoleTest extends TestCase
         $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsToMany::class, $role->dataScopes());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_use_scopes()
     {
         Role::create([
@@ -178,7 +180,7 @@ class RoleTest extends TestCase
         $this->assertEquals(1, Role::byGuard(GuardType::WEB)->count());
     }
 
-    /** @test */
+    #[Test]
     public function it_supports_soft_deletes()
     {
         $role = Role::create([

@@ -54,6 +54,7 @@ return new class extends Migration
         Schema::create($tables['data_scopes'], function (Blueprint $table) {
             $table->id();
             $table->string('name', 100)->comment('数据范围名称');
+            $table->string('slug', 100)->unique()->comment('数据范围标识符');
             $table->string('type', 50)->comment('范围类型');
             $table->json('config')->nullable()->comment('范围配置');
             $table->text('description')->nullable()->comment('描述');

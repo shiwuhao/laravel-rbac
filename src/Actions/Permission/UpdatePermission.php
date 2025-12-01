@@ -29,7 +29,7 @@ class UpdatePermission extends BaseAction
      */
     protected function rules(): array
     {
-        $id = $this->context?->id();
+        $id = $this->routeParams[0] ?? null;
         $permissionTable = config('rbac.tables.permissions');
 
         return [

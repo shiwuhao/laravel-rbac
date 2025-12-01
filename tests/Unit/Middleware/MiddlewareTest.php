@@ -2,6 +2,8 @@
 
 namespace Rbac\Tests\Unit\Middleware;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use Rbac\Tests\TestCase;
 use Rbac\Tests\Models\User;
 use Rbac\Models\Role;
@@ -22,7 +24,7 @@ class MiddlewareTest extends TestCase
         $this->setUpUserTable();
     }
 
-    /** @test */
+    #[Test]
     public function permission_middleware_allows_user_with_permission()
     {
         $user = User::create([
@@ -50,7 +52,7 @@ class MiddlewareTest extends TestCase
         $this->assertEquals('OK', $response->getContent());
     }
 
-    /** @test */
+    #[Test]
     public function permission_middleware_denies_user_without_permission()
     {
         $this->expectException(AuthorizationException::class);
@@ -68,7 +70,7 @@ class MiddlewareTest extends TestCase
         $middleware->handle($request, fn($req) => response('OK'), 'post.view');
     }
 
-    /** @test */
+    #[Test]
     public function permission_middleware_requires_authentication()
     {
         $this->expectException(AuthenticationException::class);
@@ -80,7 +82,7 @@ class MiddlewareTest extends TestCase
         $middleware->handle($request, fn($req) => response('OK'), 'post.view');
     }
 
-    /** @test */
+    #[Test]
     public function permission_middleware_supports_or_logic()
     {
         $user = User::create([
@@ -108,7 +110,7 @@ class MiddlewareTest extends TestCase
         $this->assertEquals('OK', $response->getContent());
     }
 
-    /** @test */
+    #[Test]
     public function permission_middleware_supports_and_logic()
     {
         $user = User::create([
@@ -144,7 +146,7 @@ class MiddlewareTest extends TestCase
         $this->assertEquals('OK', $response->getContent());
     }
 
-    /** @test */
+    #[Test]
     public function role_middleware_allows_user_with_role()
     {
         $user = User::create([
@@ -170,7 +172,7 @@ class MiddlewareTest extends TestCase
         $this->assertEquals('OK', $response->getContent());
     }
 
-    /** @test */
+    #[Test]
     public function role_middleware_denies_user_without_role()
     {
         $this->expectException(AuthorizationException::class);
@@ -188,7 +190,7 @@ class MiddlewareTest extends TestCase
         $middleware->handle($request, fn($req) => response('OK'), 'editor');
     }
 
-    /** @test */
+    #[Test]
     public function role_middleware_supports_or_logic()
     {
         $user = User::create([
@@ -214,7 +216,7 @@ class MiddlewareTest extends TestCase
         $this->assertEquals('OK', $response->getContent());
     }
 
-    /** @test */
+    #[Test]
     public function role_middleware_supports_and_logic()
     {
         $user = User::create([
@@ -246,7 +248,7 @@ class MiddlewareTest extends TestCase
         $this->assertEquals('OK', $response->getContent());
     }
 
-    /** @test */
+    #[Test]
     public function user_with_role_permission_can_access()
     {
         $user = User::create([

@@ -112,4 +112,5 @@ Route::prefix('users/{user_id}')->name('users.')->group(function () {
 // UserPermission 路由
 Route::prefix('user-permissions')->name('user-permissions.')->group(function () {
     Route::get('/', ListUserPermissions::class)->name('index');
+    Route::get('/{user_id}', GetUserPermissions::class)->name('get-user-permissions');
 });

@@ -2,6 +2,8 @@
 
 namespace Rbac\Tests\Feature;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use Rbac\Tests\TestCase;
 use Rbac\Tests\Models\User;
 use Rbac\Models\Role;
@@ -21,7 +23,7 @@ class InstancePermissionTest extends TestCase
         $this->setUpUserTable();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_instance_permission()
     {
         $permission = Permission::create([
@@ -40,7 +42,7 @@ class InstancePermissionTest extends TestCase
         $this->assertEquals(1, $permission->resource_id);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_distinguish_general_permission()
     {
         $permission = Permission::create([
@@ -55,7 +57,7 @@ class InstancePermissionTest extends TestCase
         $this->assertTrue($permission->isGeneralPermission());
     }
 
-    /** @test */
+    #[Test]
     public function user_can_have_both_general_and_instance_permissions()
     {
         $user = User::create([

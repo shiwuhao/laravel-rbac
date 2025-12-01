@@ -14,6 +14,7 @@ use Rbac\Contracts\DataScopeContract;
  *
  * @property int $id
  * @property string $name
+ * @property string $slug
  * @property DataScopeType $type
  * @property array|null $config
  * @property string|null $description
@@ -26,6 +27,7 @@ class DataScope extends Model implements DataScopeContract
 
     protected $fillable = [
         'name',
+        'slug',
         'type',
         'config',
         'description',
@@ -37,6 +39,23 @@ class DataScope extends Model implements DataScopeContract
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Boot the model
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // 自动生成 slug（如果未提供）
+        static::creating(function ($dataScope) {
+            if (empty($dataScope->slug)) {
+                // 使用 type 值作为 slug，加上随机后缀避免冲突
+                $baseSlug = $dataScope->type->value ?? 'scope';
+                $dataScope->slug = $baseSlug . '-' . \Illuminate\Support\Str::random(8);
+            }
+        });
+    }
 
     /**
      * 获取表名
@@ -225,6 +244,14 @@ class DataScope extends Model implements DataScopeContract
     {
         $typeValue = $type instanceof DataScopeType ? $type->value : $type;
         return $query->where('type', $typeValue);
+    }
+
+    /**
+     * 根据 slug 查询
+     */
+    public function scopeBySlug(Builder $query, string $slug): Builder
+    {
+        return $query->where('slug', $slug);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Rbac\Tests\Unit\Actions;
 
+use PHPUnit\Framework\Attributes\Test;
 use Rbac\Tests\TestCase;
 use Rbac\Tests\Models\User;
 use Rbac\Models\Role;
@@ -12,13 +13,13 @@ use Rbac\Actions\Role\UpdateRole;
 use Rbac\Actions\Role\DeleteRole;
 use Rbac\Actions\Role\AssignPermissionsToRole;
 use Rbac\Actions\Role\SyncPermissionsToRole;
-use Rbac\Actions\Role\RevokePermissionFromRole;
+use Rbac\Actions\Role\RevokePermissionsFromRole;
 use Rbac\Actions\Permission\CreatePermission;
 use Rbac\Actions\Permission\UpdatePermission;
 use Rbac\Actions\Permission\DeletePermission;
 use Rbac\Actions\User\AssignRolesToUser;
 use Rbac\Actions\User\SyncRolesToUser;
-use Rbac\Actions\User\RevokeRoleFromUser;
+use Rbac\Actions\User\RevokeRolesFromUser;
 use Rbac\Actions\User\AssignPermissionsToUser;
 use Rbac\Actions\DataScope\CreateDataScope;
 use Rbac\Enums\GuardType;
@@ -34,7 +35,7 @@ class ActionsTest extends TestCase
         $this->setUpUserTable();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_role()
     {
         $action = new CreateRole();
@@ -50,7 +51,7 @@ class ActionsTest extends TestCase
         $this->assertEquals('admin', $result->slug);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_create_role_data()
     {
         $this->expectException(ValidationException::class);
@@ -61,7 +62,7 @@ class ActionsTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_update_role()
     {
         $role = Role::create([
@@ -80,7 +81,7 @@ class ActionsTest extends TestCase
         $this->assertEquals('高级编辑权限', $result->description);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_delete_role()
     {
         $role = Role::create([
@@ -97,7 +98,7 @@ class ActionsTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_assign_permissions_to_role()
     {
         $role = Role::create([
@@ -122,7 +123,7 @@ class ActionsTest extends TestCase
         $this->assertTrue($result->hasPermission($permission));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_sync_permissions_to_role()
     {
         $role = Role::create([
@@ -158,7 +159,7 @@ class ActionsTest extends TestCase
         $this->assertTrue($result->hasPermission($perm2));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_revoke_permission_from_role()
     {
         $role = Role::create([
@@ -177,15 +178,15 @@ class ActionsTest extends TestCase
 
         $role->givePermission($permission);
 
-        $action = new RevokePermissionFromRole();
+        $action = new RevokePermissionsFromRole();
         $result = $action->handle([
-            'permission_id' => $permission->id,
+            'permission_ids' => [$permission->id],
         ], $role->id);
 
         $this->assertFalse($result->hasPermission($permission));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_permission()
     {
         $action = new CreatePermission();
@@ -203,7 +204,7 @@ class ActionsTest extends TestCase
         $this->assertEquals('post.view', $result->slug);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_update_permission()
     {
         $permission = Permission::create([
@@ -222,7 +223,7 @@ class ActionsTest extends TestCase
         $this->assertEquals('查看所有文章', $result->description);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_delete_permission()
     {
         $permission = Permission::create([
@@ -241,7 +242,7 @@ class ActionsTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_assign_roles_to_user()
     {
         $user = User::create([
@@ -264,7 +265,7 @@ class ActionsTest extends TestCase
         $this->assertTrue($result->hasRole($role));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_sync_roles_to_user()
     {
         $user = User::create([
@@ -296,7 +297,7 @@ class ActionsTest extends TestCase
         $this->assertTrue($result->hasRole($role2));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_revoke_role_from_user()
     {
         $user = User::create([
@@ -313,7 +314,7 @@ class ActionsTest extends TestCase
 
         $user->assignRole($role);
 
-        $action = new RevokeRoleFromUser();
+        $action = new RevokeRolesFromUser();
         $result = $action->handle([
             'role_ids' => [$role->id],
         ], $user->id);
@@ -321,7 +322,7 @@ class ActionsTest extends TestCase
         $this->assertFalse($result->hasRole($role));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_assign_permissions_to_user()
     {
         $user = User::create([
@@ -346,7 +347,7 @@ class ActionsTest extends TestCase
         $this->assertTrue($result->hasDirectPermission($permission));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_data_scope()
     {
         $action = new CreateDataScope();

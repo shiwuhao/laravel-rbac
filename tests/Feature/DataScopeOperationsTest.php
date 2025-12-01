@@ -2,6 +2,8 @@
 
 namespace Rbac\Tests\Feature;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use Rbac\Tests\TestCase;
 use Rbac\Tests\Models\User;
 use Rbac\Models\Role;
@@ -25,7 +27,7 @@ class DataScopeOperationsTest extends TestCase
         $this->setUpUserTable();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_assign_data_scopes_to_role()
     {
         $role = Role::create([
@@ -47,7 +49,7 @@ class DataScopeOperationsTest extends TestCase
         $this->assertEquals(1, $result->dataScopes()->count());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_sync_data_scopes_to_role()
     {
         $role = Role::create([
@@ -77,7 +79,7 @@ class DataScopeOperationsTest extends TestCase
         $this->assertEquals($scope2->id, $result->dataScopes()->first()->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_revoke_data_scope_from_role()
     {
         $role = Role::create([
@@ -101,7 +103,7 @@ class DataScopeOperationsTest extends TestCase
         $this->assertEquals(0, $result->dataScopes()->count());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_assign_data_scopes_to_user()
     {
         $user = User::create([
@@ -123,7 +125,7 @@ class DataScopeOperationsTest extends TestCase
         $this->assertEquals(1, $result->dataScopes()->count());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_sync_data_scopes_to_user()
     {
         $user = User::create([
@@ -153,7 +155,7 @@ class DataScopeOperationsTest extends TestCase
         $this->assertEquals($scope2->id, $result->dataScopes()->first()->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_revoke_data_scope_from_user()
     {
         $user = User::create([

@@ -28,8 +28,12 @@ class UpdateDataScope extends BaseAction
      */
     protected function rules(): array
     {
+        $dataScopeTable = config('rbac.tables.data_scopes');
+        $dataScopeId = $this->routeParams[0] ?? null;
+
         return [
             'name' => 'sometimes|string|max:255',
+            'slug' => "sometimes|string|max:100|unique:{$dataScopeTable},slug,{$dataScopeId}",
             'description' => 'nullable|string|max:500',
             'type' => 'sometimes|string|in:all,custom,department,department_and_sub,only_self',
             'config' => 'nullable|array',
@@ -48,6 +52,7 @@ class UpdateDataScope extends BaseAction
 
         $dataScope->update($this->context->only([
             'name',
+            'slug',
             'description',
             'type',
             'config',

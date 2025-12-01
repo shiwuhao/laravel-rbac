@@ -13,7 +13,7 @@ use Rbac\Contracts\DataScopeContract;
  * 用户角色和权限特性
  *
  * 为用户模型提供角色和权限的查询、判断功能
- * 
+ *
  * 注意：所有写操作（分配、撤销、同步）请使用对应的 Action 类：
  * - AssignRolesToUser: 分配角色
  * - RevokeRoleFromUser: 撤销角色
@@ -53,7 +53,7 @@ trait HasRolesAndPermissions
     /**
      * 用户数据范围关联
      */
-    public function dataScopes(): BelongsToMany
+    public function directDataScopes(): BelongsToMany
     {
         return $this->belongsToMany(
             config('rbac.models.data_scope'),
@@ -126,7 +126,7 @@ trait HasRolesAndPermissions
 
     /**
      * 检查用户是否具有指定权限
-     * 
+     *
      * @param string|PermissionContract $permission 权限标识或权限实例
      * @param string|null $resourceType 资源类型（可选，用于实例权限）
      * @param int|null $resourceId 资源ID（可选，用于实例权限）
@@ -150,7 +150,7 @@ trait HasRolesAndPermissions
 
     /**
      * 检查用户是否具有实例级权限
-     * 
+     *
      * @param string $permissionSlug 权限标识（如 report:view）
      * @param string $resourceType 资源类型（如 App\Models\Report）
      * @param int $resourceId 资源ID

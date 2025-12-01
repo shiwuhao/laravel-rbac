@@ -48,12 +48,14 @@ class RbacSeeder extends Seeder
         $dataScopes = [
             [
                 'name' => '全部数据',
+                'slug' => 'all',
                 'type' => DataScopeType::ALL,
                 'config' => null,
                 'description' => '可以访问系统中的所有数据',
             ],
             [
                 'name' => '本组织数据',
+                'slug' => 'organization',
                 'type' => DataScopeType::ORGANIZATION,
                 'config' => [
                     'organization_field' => 'organization_id',
@@ -63,6 +65,7 @@ class RbacSeeder extends Seeder
             ],
             [
                 'name' => '本部门数据',
+                'slug' => 'department',
                 'type' => DataScopeType::DEPARTMENT,
                 'config' => [
                     'department_field' => 'department_id',
@@ -72,6 +75,7 @@ class RbacSeeder extends Seeder
             ],
             [
                 'name' => '个人数据',
+                'slug' => 'personal',
                 'type' => DataScopeType::PERSONAL,
                 'config' => [
                     'user_field' => 'user_id',
@@ -81,6 +85,7 @@ class RbacSeeder extends Seeder
             ],
             [
                 'name' => '活跃用户数据',
+                'slug' => 'active_users',
                 'type' => DataScopeType::CUSTOM,
                 'config' => [
                     'rules' => [
@@ -103,6 +108,7 @@ class RbacSeeder extends Seeder
         foreach ($dataScopes as $dataScopeData) {
             CreateDataScope::handle([
                 'name' => $dataScopeData['name'],
+                'slug' => $dataScopeData['slug'],
                 'type' => $dataScopeData['type']->value,
                 'config' => $dataScopeData['config'],
                 'description' => $dataScopeData['description']

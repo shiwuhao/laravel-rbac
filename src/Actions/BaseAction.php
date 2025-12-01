@@ -16,8 +16,14 @@ abstract class BaseAction
 
     protected ActionContext $context;
 
-    public function __construct()
-    {
+    /**
+     * 构造函数：接收路由参数
+     *
+     * @param array $routeParams 路由参数（如 [roleId, userId] 等）
+     */
+    public function __construct(
+        protected readonly array $routeParams = []
+    ) {
         $this->response = app(config('rbac.response_formatter'));
     }
 
@@ -31,7 +37,7 @@ abstract class BaseAction
     /**
      * 定义验证规则
      *
-     * 可在子类中访问 $this->context 获取动态规则
+     * 可通过 $this->routeParams 访问路由参数
      *
      * @return array<string, string|array>
      */
@@ -43,7 +49,7 @@ abstract class BaseAction
     /**
      * 验证数据
      *
-     * @param  array  $data  待验证的数据
+     * @param array $data 待验证的数据
      * @return array 验证后的数据
      */
     public function validate(array $data): array
@@ -57,7 +63,7 @@ abstract class BaseAction
     /**
      * 应用查询过滤器（从配置读取）
      *
-     * @param  array  $params  查询参数
+     * @param array $params 查询参数
      */
     protected function applyQueryFilter(\Illuminate\Database\Eloquent\Builder $query, array $params): \Illuminate\Database\Eloquent\Builder
     {
@@ -74,8 +80,8 @@ abstract class BaseAction
     /**
      * 获取分页大小（限制最大值）
      *
-     * @param  int  $default  默认值
-     * @param  int  $max  最大值
+     * @param int $default 默认值
+     * @param int $max 最大值
      */
     protected function getPerPage(int $default = 15, int $max = 100): int
     {
@@ -87,20 +93,23 @@ abstract class BaseAction
     /**
      * 静态调用入口
      *
-     * @param  array  $data  数据数组
-     * @param  mixed  ...$args  额外参数（如 ID）
+     * @param array $data 数据数组
+     * @param mixed ...$routeParams 路由参数（如 ID）
      *
      * @example
      * UpdateRole::handle($request->all(), $roleId);
      * CreateRole::handle($request->all());
      */
-    public static function handle(array $data = [], ...$args): mixed
+    public static function handle(array $data = [], ...$routeParams): mixed
     {
-        $action = app(static::class);
-        $action->context = new ActionContext($data, $args, $data);
-
+        // 创建实例并注入路由参数
+        $action = new static($routeParams);
+        
+        // 验证数据
         $validated = $action->validate($data);
-        $action->context = new ActionContext($validated, $args, $data);
+        
+        // 初始化 context（只初始化一次，使用验证后的数据）
+        $action->context = new ActionContext($validated, $routeParams, $data);
 
         return $action->execute();
     }
@@ -110,32 +119,55 @@ abstract class BaseAction
      *
      * 处理路由参数：当第一个参数是路径参数（如 {id}）时，自动从 request 获取数据
      *
-     * @param  mixed  $dataOrId  数据数组或路径参数（如 id）
-     * @param  mixed  ...$args  额外参数
+     * @param mixed $firstParam 数据数组或路径参数（如 id）
+     * @param mixed ...$restParams 额外参数
+     * @throws \Throwable
      */
-    public function __invoke(mixed $dataOrId = null, ...$args): mixed
+    public function __invoke(mixed $firstParam = null, ...$restParams): mixed
     {
-        // 区分路径参数和数据数组
-        if (is_array($dataOrId)) {
-            $data = $dataOrId;
-        } else {
-            // 路径参数场景：从 request 获取数据，路径参数作为额外参数
-            $data = request()->all();
-            if ($dataOrId !== null) {
-                array_unshift($args, $dataOrId);
-            }
-        }
+        // 解析参数
+        [$data, $routeParams] = $this->resolveParams($firstParam, $restParams);
 
         try {
-            // 验证数据，但保留原始数据用于过滤器
+            // 验证数据
             $validated = $this->validate($data);
-            $this->context = new ActionContext($validated, $args, $data);
+            
+            // 初始化 context（只初始化一次，使用验证后的数据）
+            $this->context = new ActionContext($validated, $routeParams, $data);
 
             $result = $this->execute();
 
             return $this->response->success($result);
         } catch (\Throwable $e) {
-            return $this->response->failure($e->getMessage());
+            if (app()->environment('production')) {
+                return $this->response->failure($e->getMessage());
+            }
+            throw $e;
         }
+    }
+
+    /**
+     * 解析调用参数
+     *
+     * @param mixed $firstParam 第一个参数
+     * @param array $restParams 剩余参数
+     * @return array [数据数组, 路由参数数组]
+     */
+    private function resolveParams(mixed $firstParam, array $restParams): array
+    {
+        if (is_array($firstParam)) {
+            // 场景1：直接传数组 Action::handle(['name' => 'xxx'])
+            return [$firstParam, array_merge($this->routeParams, $restParams)];
+        }
+        
+        // 场景2：路由参数 + request 数据
+        $data = request()->all();
+        $routeParams = array_merge(
+            $this->routeParams,
+            array_filter([$firstParam], fn($v) => $v !== null),
+            $restParams
+        );
+        
+        return [$data, $routeParams];
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Rbac\Tests\Feature;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use Rbac\Tests\TestCase;
 use Rbac\Tests\Models\User;
 use Rbac\Models\Role;
@@ -19,7 +21,7 @@ class IntegrationTest extends TestCase
         $this->setUpUserTable();
     }
 
-    /** @test */
+    #[Test]
     public function data_scope_workflow()
     {
         // 1. 创建数据范围
@@ -96,7 +98,7 @@ class IntegrationTest extends TestCase
         $this->assertTrue($staff->hasRole('staff'));
     }
 
-    /** @test */
+    #[Test]
     public function instance_permission_workflow()
     {
         // 1. 创建通用权限

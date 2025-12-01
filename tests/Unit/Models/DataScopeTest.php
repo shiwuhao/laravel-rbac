@@ -2,6 +2,8 @@
 
 namespace Rbac\Tests\Unit\Models;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use Rbac\Tests\TestCase;
 use Rbac\Models\DataScope;
 use Rbac\Enums\DataScopeType;
@@ -15,7 +17,7 @@ class DataScopeTest extends TestCase
         $this->setUpUserTable();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_a_data_scope()
     {
         $dataScope = DataScope::create([
@@ -30,7 +32,7 @@ class DataScopeTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_create_custom_data_scope()
     {
         $dataScope = DataScope::create([
@@ -46,7 +48,7 @@ class DataScopeTest extends TestCase
         $this->assertEquals('active', $dataScope->config['status']);
     }
 
-    /** @test */
+    #[Test]
     public function it_has_relationships()
     {
         $dataScope = DataScope::create([
@@ -58,7 +60,7 @@ class DataScopeTest extends TestCase
         $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsToMany::class, $dataScope->users());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_use_type_scope()
     {
         DataScope::create([
@@ -81,7 +83,7 @@ class DataScopeTest extends TestCase
         $this->assertEquals(1, DataScope::byType('department')->count());
     }
 
-    /** @test */
+    #[Test]
     public function it_casts_type_to_enum()
     {
         $dataScope = DataScope::create([

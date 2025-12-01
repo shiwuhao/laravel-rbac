@@ -7,7 +7,7 @@ namespace Rbac\Actions;
  *
  * 封装 Action 执行所需的所有数据和参数
  */
-class ActionContext
+readonly class ActionContext
 {
     /**
      * @param  array  $data  已验证的数据
@@ -15,9 +15,9 @@ class ActionContext
      * @param  array  $rawData  原始请求数据（用于过滤器）
      */
     public function __construct(
-        public readonly array $data,
-        public readonly array $args = [],
-        public readonly array $rawData = []
+        public array $data,
+        public array $args = [],
+        public array $rawData = []
     ) {}
 
     /**

@@ -62,9 +62,11 @@
         "properties": {
           "id": { "type": "integer" },
           "name": { "type": "string" },
+          "slug": { "type": "string" },
           "description": { "type": "string" },
           "type": { "type": "string", "enum": ["all","organization","department","personal","custom","department_and_sub","only_self"] },
-          "config": { "type": "object" }
+          "config": { "type": "object" },
+          "constraint": { "type": "string", "nullable": true }
         }
       },
       "AssignIdsReplace": {
@@ -105,7 +107,183 @@
       },
       "SuccessRole": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Role" } } },
       "SuccessPermission": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Permission" } } },
-      "SuccessDataScope": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/DataScope" } } }
+      "SuccessDataScope": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/DataScope" } } },
+      "UserPermissionSummary": {
+        "type": "object",
+        "description": "用户权限概览（列表页）",
+        "properties": {
+          "user_id": { "type": "integer" },
+          "user_name": { "type": "string", "nullable": true },
+          "user_email": { "type": "string", "nullable": true },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "integer" },
+                "name": { "type": "string" },
+                "slug": { "type": "string" },
+                "enabled": { "type": "boolean" }
+              }
+            }
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "total_roles": { "type": "integer", "description": "总角色数" },
+              "enabled_roles": { "type": "integer", "description": "启用角色数" },
+              "disabled_roles": { "type": "integer", "description": "禁用角色数" },
+              "total_permissions": { "type": "integer", "description": "总权限数（角色+直接）" },
+              "role_permissions": { "type": "integer", "description": "从角色继承的权限数" },
+              "direct_permissions": { "type": "integer", "description": "直接分配的权限数" },
+              "total_data_scopes": { "type": "integer", "description": "总数据范围数" },
+              "role_data_scopes": { "type": "integer", "description": "从角色继承的数据范围数" },
+              "direct_data_scopes": { "type": "integer", "description": "直接分配的数据范围数" }
+            }
+          },
+          "has_direct_permissions": { "type": "boolean", "description": "是否有直接权限" },
+          "has_direct_data_scopes": { "type": "boolean", "description": "是否有直接数据范围" },
+          "has_disabled_roles": { "type": "boolean", "description": "是否有禁用的角色" }
+        }
+      },
+      "PermissionWithSource": {
+        "type": "object",
+        "description": "带来源标注的权限",
+        "allOf": [
+          { "$ref": "#/components/schemas/Permission" },
+          {
+            "type": "object",
+            "properties": {
+              "is_instance_permission": { "type": "boolean", "description": "是否为实例权限" },
+              "sources": {
+                "type": "array",
+                "description": "权限来源列表",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string", "enum": ["role", "direct"], "description": "来源类型：role=角色继承，direct=直接分配" },
+                    "role_id": { "type": "integer", "description": "角色ID（仅当type=role时）" },
+                    "role_name": { "type": "string", "description": "角色名称（仅当type=role时）" },
+                    "role_slug": { "type": "string", "description": "角色标识（仅当type=role时）" }
+                  }
+                }
+              },
+              "has_conflict": { "type": "boolean", "description": "是否有冲突（多个来源）" }
+            }
+          }
+        ]
+      },
+      "DataScopeWithSource": {
+        "type": "object",
+        "description": "带来源标注的数据范围",
+        "allOf": [
+          { "$ref": "#/components/schemas/DataScope" },
+          {
+            "type": "object",
+            "properties": {
+              "sources": {
+                "type": "array",
+                "description": "数据范围来源列表",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string", "enum": ["role", "direct"] },
+                    "role_id": { "type": "integer" },
+                    "role_name": { "type": "string" },
+                    "role_slug": { "type": "string" }
+                  }
+                }
+              },
+              "has_conflict": { "type": "boolean" }
+            }
+          }
+        ]
+      },
+      "UserPermissionDetail": {
+        "type": "object",
+        "description": "用户权限详情（详情页）",
+        "properties": {
+          "user_id": { "type": "integer" },
+          "roles": {
+            "type": "array",
+            "description": "角色详细信息",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "integer" },
+                "name": { "type": "string" },
+                "slug": { "type": "string" },
+                "description": { "type": "string" },
+                "enabled": { "type": "boolean" },
+                "permissions": {
+                  "type": "array",
+                  "items": {
+                    "allOf": [
+                      { "$ref": "#/components/schemas/Permission" },
+                      { "type": "object", "properties": { "is_instance_permission": { "type": "boolean" } } }
+                    ]
+                  }
+                },
+                "dataScopes": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/DataScope" }
+                }
+              }
+            }
+          },
+          "directPermissions": {
+            "type": "array",
+            "description": "用户直接分配的权限",
+            "items": {
+              "allOf": [
+                { "$ref": "#/components/schemas/Permission" },
+                { "type": "object", "properties": { "is_instance_permission": { "type": "boolean" } } }
+              ]
+            }
+          },
+          "directDataScopes": {
+            "type": "array",
+            "description": "用户直接分配的数据范围",
+            "items": { "$ref": "#/components/schemas/DataScope" }
+          },
+          "merged": {
+            "type": "object",
+            "description": "合并后的所有权限（去重+来源标注）",
+            "properties": {
+              "all_permissions": {
+                "type": "array",
+                "description": "所有基础权限（非实例权限）",
+                "items": { "$ref": "#/components/schemas/PermissionWithSource" }
+              },
+              "instance_permissions": {
+                "type": "object",
+                "description": "实例权限（按资源类型分组）",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PermissionWithSource" }
+                }
+              },
+              "all_data_scopes": {
+                "type": "array",
+                "description": "所有数据范围",
+                "items": { "$ref": "#/components/schemas/DataScopeWithSource" }
+              },
+              "stats": {
+                "type": "object",
+                "properties": {
+                  "total_permissions": { "type": "integer", "description": "总权限数" },
+                  "base_permissions": { "type": "integer", "description": "基础权限数" },
+                  "instance_permissions": { "type": "integer", "description": "实例权限数" },
+                  "total_data_scopes": { "type": "integer", "description": "总数据范围数" },
+                  "from_roles": { "type": "integer", "description": "来自角色的数量" },
+                  "from_direct": { "type": "integer", "description": "直接分配的数量" },
+                  "conflicts": { "type": "integer", "description": "冲突数量（有多个来源的权限/数据范围）" }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "security": [ { "bearerAuth": [] } ],
@@ -180,7 +358,30 @@
       "put": { "tags": ["Users"], "summary": "同步用户角色（完全替换）", "parameters": [ { "name": "user_id", "in": "path", "required": true, "schema": { "type": "integer" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "role_ids": { "type": "array", "items": { "type": "integer" } } }, "required": ["role_ids"] } } } }, "responses": { "200": { "description": "用户角色" } } }
     },
     "/users/{user_id}/permissions": {
-      "get": { "tags": ["Users"], "summary": "获取用户权限信息（角色权限+直接权限）", "parameters": [ { "name": "user_id", "in": "path", "required": true, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "权限信息" } } },
+      "get": {
+        "tags": ["UserPermissions"],
+        "summary": "获取指定用户的权限详情",
+        "description": "返回用户完整的权限信息，包括角色详细信息、直接权限、合并后的权限（含来源标注、实例权限区分、冲突标识）",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "用户ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "用户权限详情",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserPermissionDetail" }
+              }
+            }
+          }
+        }
+      },
       "post": { "tags": ["Users"], "summary": "分配用户直接权限（批量/可替换）", "parameters": [ { "name": "user_id", "in": "path", "required": true, "schema": { "type": "integer" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "permission_ids": { "type": "array", "items": { "type": "integer" } }, "replace": { "type": "boolean" } }, "required": ["permission_ids"] } } } }, "responses": { "200": { "description": "用户权限" } } },
       "delete": { "tags": ["Users"], "summary": "撤销用户直接权限（批量）", "parameters": [ { "name": "user_id", "in": "path", "required": true, "schema": { "type": "integer" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "permission_ids": { "type": "array", "items": { "type": "integer" } } }, "required": ["permission_ids"] } } } }, "responses": { "200": { "description": "用户权限" } } },
       "put": { "tags": ["Users"], "summary": "同步用户直接权限（完全替换）", "parameters": [ { "name": "user_id", "in": "path", "required": true, "schema": { "type": "integer" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "permission_ids": { "type": "array", "items": { "type": "integer" } } }, "required": ["permission_ids"] } } } }, "responses": { "200": { "description": "用户权限" } } }
@@ -196,7 +397,59 @@
     },
 
     "/user-permissions": {
-      "get": { "tags": ["UserPermissions"], "summary": "用户权限列表（分页）", "parameters": [ { "name": "keyword", "in": "query", "schema": { "type": "string" } }, { "name": "role", "in": "query", "schema": { "type": "string" } }, { "name": "per_page", "in": "query", "schema": { "type": "integer", "minimum": 15, "maximum": 100 } } ], "responses": { "200": { "description": "分页用户权限", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pagination" } } } } } }
+      "get": {
+        "tags": ["UserPermissions"],
+        "summary": "用户权限列表（分页）",
+        "description": "返回用户权限概览信息，包括角色列表、权限统计数据、直接权限和数据范围统计",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "搜索关键词（用户名、邮箱等）"
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "按角色筛选"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 15, "maximum": 100, "default": 15 },
+            "description": "每页数量"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "页码"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "分页用户权限概览",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "current_page": { "type": "integer" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/UserPermissionSummary" }
+                    },
+                    "per_page": { "type": "integer" },
+                    "total": { "type": "integer" },
+                    "last_page": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

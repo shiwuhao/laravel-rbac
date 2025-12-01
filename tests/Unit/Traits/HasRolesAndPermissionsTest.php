@@ -2,6 +2,8 @@
 
 namespace Rbac\Tests\Unit\Traits;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use Rbac\Tests\TestCase;
 use Rbac\Tests\Models\User;
 use Rbac\Models\Role;
@@ -19,7 +21,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->setUpUserTable();
     }
 
-    /** @test */
+    #[Test]
     public function user_can_be_assigned_a_role()
     {
         $user = User::create([
@@ -40,7 +42,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->assertTrue($user->hasRole('editor'));
     }
 
-    /** @test */
+    #[Test]
     public function user_can_be_assigned_multiple_roles()
     {
         $user = User::create([
@@ -69,7 +71,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->assertTrue($user->hasAnyRole([$role1]));
     }
 
-    /** @test */
+    #[Test]
     public function user_can_revoke_roles()
     {
         $user = User::create([
@@ -91,7 +93,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->assertFalse($user->fresh()->hasRole($role));
     }
 
-    /** @test */
+    #[Test]
     public function user_can_sync_roles()
     {
         $user = User::create([
@@ -119,7 +121,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->assertTrue($user->hasRole($role2));
     }
 
-    /** @test */
+    #[Test]
     public function user_can_be_assigned_direct_permissions()
     {
         $user = User::create([
@@ -142,7 +144,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->assertTrue($user->hasDirectPermission('post.update'));
     }
 
-    /** @test */
+    #[Test]
     public function user_inherits_permissions_from_roles()
     {
         $user = User::create([
@@ -172,7 +174,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->assertTrue($user->hasPermissionTo('post.update'));
     }
 
-    /** @test */
+    #[Test]
     public function user_can_check_multiple_permissions()
     {
         $user = User::create([
@@ -203,7 +205,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->assertTrue($user->hasAnyPermission([$perm1]));
     }
 
-    /** @test */
+    #[Test]
     public function user_can_revoke_permissions()
     {
         $user = User::create([
@@ -227,7 +229,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->assertFalse($user->fresh()->hasDirectPermission($permission));
     }
 
-    /** @test */
+    #[Test]
     public function user_can_sync_permissions()
     {
         $user = User::create([
@@ -259,7 +261,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->assertTrue($user->hasDirectPermission($perm2));
     }
 
-    /** @test */
+    #[Test]
     public function user_can_get_all_permissions()
     {
         $user = User::create([
@@ -301,7 +303,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->assertTrue($allPermissions->contains('id', $directPerm->id));
     }
 
-    /** @test */
+    #[Test]
     public function user_can_check_permission_via_string()
     {
         $user = User::create([
@@ -324,7 +326,7 @@ class HasRolesAndPermissionsTest extends TestCase
         $this->assertFalse($user->hasPermissionTo('post.delete'));
     }
 
-    /** @test */
+    #[Test]
     public function user_can_be_assigned_data_scopes()
     {
         $user = User::create([
